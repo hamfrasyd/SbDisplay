@@ -361,3 +361,48 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ===========================
+# Angular / Node.js / TypeScript
+# ===========================
+
+# Dependencies
+node_modules/
+
+# Angular build output
+dist/
+tmp/
+out-tsc/
+
+# Angular cache (v13+)
+.angular/
+
+# Environment files (contain secrets/config)
+**/environments/environment*.ts
+!**/environments/environment.ts
+!**/environments/environment.prod.ts
+
+# TypeScript compiled output
+*.js.map
+*.d.ts
+
+# ESLint / Prettier cache
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# Testing
+/coverage
+.karma_cache/
+cypress/screenshots/
+cypress/videos/
+
+# IDE - VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+
+# OS
+.DS_Store
+Thumbs.db
