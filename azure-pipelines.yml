@@ -41,7 +41,7 @@ steps:
     displayName: 'Run tests with code coverage'
     inputs:
       command: 'test'
-      projects: '**/*Tests/*.csproj'
+      projects: 'SbDisplayTests/SbDisplayTests.csproj'
       arguments: >
         --configuration $(buildConfiguration)
         --no-build
