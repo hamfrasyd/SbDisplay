@@ -11,12 +11,6 @@ pr:
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-  buildConfiguration: 'Release'
-  solution: 'SbDisplay.sln'
-  apiProject: 'SbDisplayApi/SbDisplayApi.csproj'
-  publishOutput: '$(Build.ArtifactStagingDirectory)/publish'
-
 steps:
   - task: UseDotNet@2
     displayName: 'Install .NET 8 SDK'
