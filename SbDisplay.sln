@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11512.155 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SbDisplayLib", "SbDisplayLib\SbDisplayLib.csproj", "{45C1108F-77F3-4CD8-9643-51459FD906C4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SbDisplayApi", "SbDisplayApi\SbDisplayApi.csproj", "{C0B108C0-4788-4FD8-B238-1E40BFFDB786}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SbDisplay.Tests", "SbDisplay.Tests\SbDisplay.Tests.csproj", "{068BC82B-AE35-4062-A09D-72DC69DF96A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{C0B108C0-4788-4FD8-B238-1E40BFFDB786}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0B108C0-4788-4FD8-B238-1E40BFFDB786}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0B108C0-4788-4FD8-B238-1E40BFFDB786}.Release|Any CPU.Build.0 = Release|Any CPU
+		{068BC82B-AE35-4062-A09D-72DC69DF96A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{068BC82B-AE35-4062-A09D-72DC69DF96A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{068BC82B-AE35-4062-A09D-72DC69DF96A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{068BC82B-AE35-4062-A09D-72DC69DF96A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
