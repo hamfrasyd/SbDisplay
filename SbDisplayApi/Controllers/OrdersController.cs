@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SbDisplayApi.Dtos;
+using SbDisplayLib.Handlers;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -9,6 +11,10 @@ namespace SbDisplayApi.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
+        public OrdersController()
+        {
+        }
+
         // GET: api/<OrdersController>
         [HttpGet]
         public IEnumerable<string> Get()
@@ -25,9 +31,8 @@ namespace SbDisplayApi.Controllers
 
         // POST api/<OrdersController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] OrderDto value)
+        public async Task<IActionResult> Post([FromBody] string value)
         {
-
             return Ok();
         }
 
