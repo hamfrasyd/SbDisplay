@@ -16,5 +16,6 @@ namespace SbDisplayLib.Models
         //Nullable for nu skal ændres når items bliver introduceret
         public List<Item>? Items { get; set; }
         public OrderStatus Status { get; set; }
+        
     }
 }

@@ -23,9 +23,18 @@ namespace SbDisplayApi.Controllers
         }
         // GET: api/<OrdersController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Get()
         {
-            return new string[] { "value1", "value2" };
+            var orders = _orderRepo.GetAll();
+
+            if (orders == null || orders.Count == 0)
+            {
+                return NoContent();
+            }
+
+            return Ok(orders);
         }
 
         // GET api/<OrdersController>/5
