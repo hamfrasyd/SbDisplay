@@ -18,8 +18,10 @@ namespace SbDisplayApi
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-            
-            var app = builder.Build();
+			builder.Services.AddScoped<IOrderRepository>(_ =>
+	                new OrderRepository(builder.Configuration.GetConnectionString("DefaultConnection")!));
+
+			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

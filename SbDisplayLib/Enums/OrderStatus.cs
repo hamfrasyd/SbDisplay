@@ -11,15 +11,15 @@ namespace SbDisplayLib.Enums
     public enum OrderStatus
     {
         [Display(Name = "Received")]
-        Receieved,
+        Receieved = 1,
 
         [Display(Name = "Under Preparation")]
-        UnderPreparation,
+        UnderPreparation = 2,
 
         [Display(Name = "Ready For Pickup")]
-        ReadyForPickup,
+        ReadyForPickup = 3,
 
         [Display(Name = "Completed")]
-        Completed
+        Completed = 4,
     }
 }
