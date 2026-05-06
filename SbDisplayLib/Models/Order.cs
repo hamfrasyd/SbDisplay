@@ -12,5 +12,6 @@ namespace SbDisplayLib.Models
         public int Id { get; set; }
         public List<Item> Items { get; set; }
         public OrderStatus Status { get; set; }
+         
     }
 }

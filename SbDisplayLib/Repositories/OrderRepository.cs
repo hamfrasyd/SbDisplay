@@ -24,41 +24,42 @@ namespace SbDisplayLib.Repositories
 		//Create
 
 		//Read - dvs. Get & GetAll
+
 		public Order? UpdateOrderStatus(int orderId, OrderStatus statusId)
-        {
-			
+        {			
 			//Vi skal validerer vores parameter input. (Handler?)
-
-			//Vi skal parse vores enum input til en int?
-
 			//Vi skal lave et SQL script.			
-            const string query = 
-                @"
-                UPDATE 
-                    TestOrders
-                SET 
-                    StatusId = @StatusId
-                WHERE
-                    OrderId = @orderId";
+            const string updateQuery =
+				@"
+                UPDATE TestOrders
+                SET StatusId = @StatusId
+				OUTPUT         
+					INSERTED.OrderId, 
+					INSERTED.StatusId,
+                WHERE OrderId = @orderId";
 
 
 			//Så vi skal åbne vores SQL connection.
 			using var connection = new SqlConnection(_connectionString);
 			connection.Open();
 
-			using var command = new SqlCommand(query, connection);
+			using var command = new SqlCommand(updateQuery, connection);
+			command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)statusId;
 			command.Parameters.Add("@OrderId", SqlDbType.Int).Value = orderId;
-			command.Parameters.Add("@StatusId", SqlDbType.Int).Value = statusId;
 
-			//Vi skal bruge vores SQL script i databasen.
-			//using var reader = command.ExecuteNonQuery();
-			command.ExecuteNonQuery();
+			using var reader = command.ExecuteReader();
+			if (reader.Read())
+			{
+				return new Order
+				{
+					Id = (int)reader["OrderId"],
+					Status = (OrderStatus)(int)reader["StatusId"]
 
-			//Vi skal returnere resultatet.
+				};
+			}
 			return null;
-        }
 
-
+		}
 
 
         //Delete 
