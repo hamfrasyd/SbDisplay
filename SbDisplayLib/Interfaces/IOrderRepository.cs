@@ -5,6 +5,6 @@ namespace SbDisplayLib.Interfaces
 {
     public interface IOrderRepository
     {
-        public Order? UpdateOrderStatus(int orderId, OrderStatus satus);
+        public Order? UpdateOrderStatus(int orderId, OrderStatus statusId);
     }
 }
