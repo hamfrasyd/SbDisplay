@@ -25,9 +25,9 @@ namespace SbDisplayLib.Repositories
         public Order Create(Order newOrder)
         {
             const string sql = """
-            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId)
-            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId
-            VALUES (@OrderId, @StatusId, @TransactionId)
+            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId, CreationTime)
+            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId, INSERTED.CreationTime
+            VALUES (@OrderId, @StatusId, @TransactionId, @CreationTime)
             """;
 
             using var connection = new SqlConnection(_connectionString);
@@ -36,6 +36,7 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.OrderId;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
+            command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
 
             connection.Open();
 
@@ -48,7 +49,8 @@ namespace SbDisplayLib.Repositories
             {
                 OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                 TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
-                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId"))
+                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
+                CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
             };
         }
 
