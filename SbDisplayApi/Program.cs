@@ -1,4 +1,7 @@
 
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Repositories;
+
 namespace SbDisplayApi
 {
     public class Program
@@ -14,6 +17,8 @@ namespace SbDisplayApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
