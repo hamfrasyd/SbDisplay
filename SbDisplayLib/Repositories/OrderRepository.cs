@@ -54,7 +54,31 @@ namespace SbDisplayLib.Repositories
 
         public List<Order> GetAll()
         {
-            throw new NotImplementedException();
+            var orderList = new List<Order>();
+
+            const string sql = """
+                SELECT OrderId, TransactionId, StatusId, CreationTime FROM [dbo].[TestOrders]
+                """;
+
+            using var connection = new SqlConnection(_connectionString);
+            using var command = new SqlCommand(sql, connection);
+
+            connection.Open();
+            using var reader = command.ExecuteReader();
+            
+            while (reader.Read())
+            {
+                var order = new Order
+                {
+                    OrderId = reader.GetInt32(0),
+                    TransactionId = reader.GetInt32(1),
+                    Status = (OrderStatus)reader.GetInt32(2),
+                    CreationTime = reader.GetInt64(3)
+
+                };
+                orderList.Add(order);
+            }
+            return orderList;
         }
 
         public Order GetById(int id)
