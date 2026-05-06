@@ -20,6 +20,6 @@ namespace SbDisplayLib.Enums
         ReadyForPickup = 3,
 
         [Display(Name = "Completed")]
-        Completed = 4,
+        Completed = 4
     }
 }

@@ -1,0 +1,6 @@
+@SbDisplayApiV2_HostAddress = http://localhost:5212
+
+GET {{SbDisplayApiV2_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -2,6 +2,11 @@
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Repositories;
 
+using SbDisplayLib.ApiClients;
+using SbDisplayLib.Handlers;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Repositories;
+
 namespace SbDisplayApi
 {
     public class Program
@@ -11,6 +16,14 @@ namespace SbDisplayApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddScoped<NewOrderHandler>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
+            {
+                client.BaseAddress = new Uri("https://api.shopbox.com/");
+            });
+            
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,11 +37,9 @@ namespace SbDisplayApi
 			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
+            
 
             app.UseHttpsRedirection();
 
