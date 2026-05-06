@@ -1,4 +1,8 @@
 ﻿using Microsoft.Data.SqlClient;
+using SbDisplayLib.Enums;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using SbDisplayLib.Enums;
 using SbDisplayLib.Interfaces;
@@ -25,9 +29,9 @@ namespace SbDisplayLib.Repositories
         public Order Create(Order newOrder)
         {
             const string sql = """
-            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId)
-            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId
-            VALUES (@OrderId, @StatusId, @TransactionId)
+            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId, CreationTime)
+            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId, INSERTED.CreationTime
+            VALUES (@OrderId, @StatusId, @TransactionId, @CreationTime)
             """;
 
             using var connection = new SqlConnection(_connectionString);
@@ -36,6 +40,7 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.OrderId;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
+            command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
 
             connection.Open();
 
@@ -48,7 +53,8 @@ namespace SbDisplayLib.Repositories
             {
                 OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                 TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
-                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId"))
+                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
+                CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
             };
         }
 
@@ -86,9 +92,40 @@ namespace SbDisplayLib.Repositories
             throw new NotImplementedException();
         }
 
-        public Order UpdateStatus(int orderId, OrderStatus status)
+        public Order? UpdateOrderStatus(int orderId, OrderStatus statusId)
         {
-            throw new NotImplementedException();
+            //Vi skal validerer vores parameter input. (Handler?)
+            //Vi skal lave et SQL script.			
+            const string updateQuery =
+                @"
+                UPDATE TestOrders
+                SET StatusId = @StatusId
+				OUTPUT         
+					INSERTED.OrderId, 
+					INSERTED.StatusId,
+                WHERE OrderId = @orderId";
+
+
+            //Så vi skal åbne vores SQL connection.
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            using var command = new SqlCommand(updateQuery, connection);
+            command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)statusId;
+            command.Parameters.Add("@OrderId", SqlDbType.Int).Value = orderId;
+
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return new Order
+                {
+                    Id = (int)reader["OrderId"],
+                    Status = (OrderStatus)(int)reader["StatusId"]
+
+                };
+            }
+            return null;
+
         }
     }
 }

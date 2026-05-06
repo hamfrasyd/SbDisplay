@@ -1,4 +1,7 @@
 
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Repositories;
+
 using SbDisplayLib.ApiClients;
 using SbDisplayLib.Handlers;
 using SbDisplayLib.Interfaces;
@@ -27,14 +30,16 @@ namespace SbDisplayApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var app = builder.Build();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+			builder.Services.AddScoped<IOrderRepository>(_ =>
+	                new OrderRepository(builder.Configuration.GetConnectionString("DefaultConnection")!));
+
+			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
+            
 
             app.UseHttpsRedirection();
 

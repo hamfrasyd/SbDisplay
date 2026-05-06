@@ -9,7 +9,7 @@ namespace SbDisplayLib.Models
 {
     public class Order
     {
-        public int OrderId { get; set; }
+        public int Id { get; set; }
         public int TransactionId { get; set; }
         public long CreationTime { get; set; }
 

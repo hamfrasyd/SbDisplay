@@ -1,4 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using SbDisplayApi.DTOs;
+using SbDisplayLib.Enums;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Models;
 using SbDisplayLib.Handlers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
@@ -11,20 +16,18 @@ namespace SbDisplayApi.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        private readonly IOrderRepository _repo;
-
-        public OrdersController(IOrderRepository repo)
+        private IOrderRepository _orderRepo;
+        public OrdersController(IOrderRepository orderRepository)
         {
-            _repo = repo;
+            _orderRepo = orderRepository;
         }
-
         // GET: api/<OrdersController>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Get()
         {
-            var orders = _repo.GetAll();
+            var orders = _orderRepo.GetAll();
 
             if (orders == null || orders.Count == 0)
             {
@@ -49,9 +52,42 @@ namespace SbDisplayApi.Controllers
         }
 
         // PUT api/<OrdersController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPut]
+        [Route("{orderId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public IActionResult ChangeOrderStatus(int orderId, [FromBody] UpdateOrderStatusRequest request)
         {
+            // TODO ens-artet fejl håndtering
+            try
+            {
+                Order? updatedOrder = _orderRepo.UpdateOrderStatus(orderId, request.Status);
+                if (updatedOrder is null)
+                {
+                    return NotFound($"Order with id {orderId} was not found.");
+                }
+
+                return Ok(updatedOrder);
+            }
+            catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                if (ex is SqlException)
+                {
+                    Console.WriteLine(ex);
+                    return StatusCode(StatusCodes.Status500InternalServerError, "A database error occurred while updating the order.");
+                }
+                else
+                {
+                    Console.WriteLine(ex);
+                    return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while updating the order.");
+                }
+            }
         }
 
         // DELETE api/<OrdersController>/5
