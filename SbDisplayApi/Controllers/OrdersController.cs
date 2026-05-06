@@ -11,15 +11,27 @@ namespace SbDisplayApi.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        public OrdersController()
+        private readonly IOrderRepository _repo;
+
+        public OrdersController(IOrderRepository repo)
         {
+            _repo = repo;
         }
 
         // GET: api/<OrdersController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Get()
         {
-            return new string[] { "value1", "value2" };
+            var orders = _repo.GetAll();
+
+            if (orders == null || orders.Count == 0)
+            {
+                return NoContent();
+            }
+
+            return Ok(orders);
         }
 
         // GET api/<OrdersController>/5
