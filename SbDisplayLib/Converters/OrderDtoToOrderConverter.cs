@@ -15,7 +15,8 @@ namespace SbDisplayLib.Converters
             Order order = new Order() 
             { 
                 OrderId = data.order_id,
-                TransactionId = data.uid
+                TransactionId = data.uid,
+                CreationTime = data.creation_time,
             };
 
             return order;

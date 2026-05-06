@@ -11,6 +11,7 @@ namespace SbDisplayLib.Models
     {
         public int OrderId { get; set; }
         public int TransactionId { get; set; }
+        public long CreationTime { get; set; }
 
         //Nullable for nu skal ændres når items bliver introduceret
         public List<Item>? Items { get; set; }
