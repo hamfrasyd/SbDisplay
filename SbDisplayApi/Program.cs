@@ -1,11 +1,8 @@
 
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Repositories;
-
 using SbDisplayLib.ApiClients;
 using SbDisplayLib.Handlers;
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Repositories;
 
 namespace SbDisplayApi
 {
@@ -31,8 +28,6 @@ namespace SbDisplayApi
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-			builder.Services.AddScoped<IOrderRepository>(_ =>
-	                new OrderRepository(builder.Configuration.GetConnectionString("DefaultConnection")!));
 
 			var app = builder.Build();
 

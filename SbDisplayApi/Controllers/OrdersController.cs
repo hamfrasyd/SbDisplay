@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
-using SbDisplayLib.Enums;
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Models;
-using SbDisplayLib.Handlers;
+using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 
@@ -53,23 +50,25 @@ namespace SbDisplayApi.Controllers
 
         // PUT api/<OrdersController>/5
         [HttpPut]
-        [Route("{orderId}")]
+        [Route("{transactionId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public IActionResult ChangeOrderStatus(int orderId, [FromBody] UpdateOrderStatusRequest request)
+        public IActionResult ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
         {
             // TODO ens-artet fejl håndtering
             try
             {
-                Order? updatedOrder = _orderRepo.UpdateOrderStatus(orderId, request.Status);
+                Order? updatedOrder = _orderRepo.UpdateOrderStatus(transactionId, request.Status);
                 if (updatedOrder is null)
                 {
-                    return NotFound($"Order with id {orderId} was not found.");
+                    return NotFound($"Order with transaction-Id {transactionId} was not found.");
                 }
 
-                return Ok(updatedOrder);
+                return Ok($"Updated status for order with Id: {updatedOrder.Id} and" +
+                    $" Trasncation-Id: {updatedOrder.TransactionId}" +
+                    $" to {OrderStatusExtension.GetDisplayName(updatedOrder.Status)}");
             }
             catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
             {
