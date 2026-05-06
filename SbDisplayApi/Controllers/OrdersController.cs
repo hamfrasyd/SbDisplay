@@ -19,7 +19,7 @@ namespace SbDisplayApi.Controllers
             _orderRepo = orderRepository;
         }
         // GET: api/<OrdersController>
-        [HttpGet]
+        [HttpGet(Name = "GetAllOrders")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Get()
@@ -35,14 +35,14 @@ namespace SbDisplayApi.Controllers
         }
 
         // GET api/<OrdersController>/5
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetOrderById")]
         public string Get(int id)
         {
             return "value";
         }
 
         // POST api/<OrdersController>
-        [HttpPost]
+        [HttpPost(Name = "CreateOrder")]
         public async Task<IActionResult> Post([FromBody] string value)
         {
             return Ok();
@@ -50,7 +50,7 @@ namespace SbDisplayApi.Controllers
 
         // PUT api/<OrdersController>/5
         [HttpPut]
-        [Route("{transactionId}")]
+        [Route("{transactionId}", Name = "UpdateOrderStatus")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,7 +90,7 @@ namespace SbDisplayApi.Controllers
         }
 
         // DELETE api/<OrdersController>/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}", Name = "DeleteOrder")]
         public void Delete(int id)
         {
         }
