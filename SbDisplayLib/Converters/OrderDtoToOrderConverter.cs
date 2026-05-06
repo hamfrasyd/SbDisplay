@@ -1,10 +1,5 @@
 ﻿using SbDisplayLib.Dtos;
 using SbDisplayLib.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SbDisplayLib.Converters
 {
@@ -14,8 +9,9 @@ namespace SbDisplayLib.Converters
         { 
             Order order = new Order() 
             { 
-                OrderId = data.order_id,
-                TransactionId = data.uid
+                Id = data.order_id,
+                TransactionId = data.uid,
+                CreationTime = data.creation_time,
             };
 
             return order;
