@@ -29,7 +29,18 @@ namespace SbDisplayApi
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-			var app = builder.Build();
+            builder.Services.AddCors(options =>
+            {
+                // Definerer en CORS-politik ved navn "AllowAny".
+                // Denne politik er meget åben og bruges ofte under udvikling eller til offentlige API'er, hvor bred adgang er ønsket.
+                options.AddPolicy("AllowAny", policy =>
+                {
+                    policy.AllowAnyOrigin()        // Tillader anmodninger fra enhver oprindelse (ethvert domæne).
+                          .AllowAnyHeader()      // Tillader alle HTTP-headere i anmodningen.
+                          .AllowAnyMethod();    // Tillader alle HTTP-metoder (GET, POST, PUT, DELETE, etc.).
+                });
+            });
+            var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             app.UseSwagger();
@@ -40,6 +51,8 @@ namespace SbDisplayApi
 
             app.UseAuthorization();
 
+            // Siger UseCors("AllowAny") efter UseAuthorization, så CORS-politikken virker efter at brugeren er autentificeret.
+            app.UseCors("AllowAny");
 
             app.MapControllers();
 
