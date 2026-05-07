@@ -1,1 +1,22 @@
-<p>ee3wefweks!</p>
+<div class="orders-grid">
+  @for (order of orders; track order.id) {
+    <div class="order-card" (click)="selectOrder(order)">
+      <h3>Ordre #{{ order.id }}</h3>
+
+      <p>
+        <strong>Transaction ID:</strong>
+        {{ order.transactionId }}
+      </p>
+
+      <p>
+        <strong>Status:</strong>
+        {{ order.status }}
+      </p>
+
+      <p>
+        <strong>Items:</strong>
+        {{ order.items?.length || 0 }}
+      </p>
+    </div>
+  }
+</div>
