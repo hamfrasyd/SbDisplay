@@ -20,7 +20,7 @@ namespace SbDisplayApi.Controllers
         }
         // GET: api/<OrdersController>
         [HttpGet(Name = "GetAllOrders")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Get()
         {

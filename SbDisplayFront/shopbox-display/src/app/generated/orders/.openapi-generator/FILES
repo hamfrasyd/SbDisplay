@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.base.service.ts
 api.module.ts
@@ -10,7 +9,9 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/item.ts
 model/models.ts
+model/order.ts
 model/orderStatus.ts
 model/problemDetails.ts
 model/transactionDto.ts
