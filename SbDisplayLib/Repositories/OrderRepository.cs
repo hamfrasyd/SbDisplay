@@ -2,17 +2,8 @@
 using SbDisplayLib.Enums;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using SbDisplayLib.Enums;
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Models;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SbDisplayLib.Repositories
 {
@@ -22,8 +13,7 @@ namespace SbDisplayLib.Repositories
 
         public OrderRepository(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
         }
 
         public Order Create(Order newOrder)
@@ -37,7 +27,7 @@ namespace SbDisplayLib.Repositories
             using var connection = new SqlConnection(_connectionString);
             using var command = new SqlCommand(sql, connection);
 
-            command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.OrderId;
+            command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.Id;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
             command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
@@ -51,7 +41,7 @@ namespace SbDisplayLib.Repositories
 
             return new Order
             {
-                OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
+                Id = reader.GetInt32(reader.GetOrdinal("OrderId")),
                 TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
                 Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
                 CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
@@ -60,7 +50,31 @@ namespace SbDisplayLib.Repositories
 
         public List<Order> GetAll()
         {
-            throw new NotImplementedException();
+            var orderList = new List<Order>();
+
+            const string sql = """
+                SELECT OrderId, TransactionId, StatusId, CreationTime FROM [dbo].[TestOrders]
+                """;
+
+            using var connection = new SqlConnection(_connectionString);
+            using var command = new SqlCommand(sql, connection);
+
+            connection.Open();
+            using var reader = command.ExecuteReader();
+            
+            while (reader.Read())
+            {
+                var order = new Order
+                {
+                    Id = reader.GetInt32(0),
+                    TransactionId = reader.GetInt32(1),
+                    Status = (OrderStatus)reader.GetInt32(2),
+                    CreationTime = reader.GetInt64(3)
+
+                };
+                orderList.Add(order);
+            }
+            return orderList;
         }
 
         public Order GetById(int id)
@@ -68,7 +82,7 @@ namespace SbDisplayLib.Repositories
             throw new NotImplementedException();
         }
 
-        public Order? UpdateOrderStatus(int orderId, OrderStatus statusId)
+        public Order? UpdateOrderStatus(int transactionId, OrderStatus statusId)
         {
             //Vi skal validerer vores parameter input. (Handler?)
             //Vi skal lave et SQL script.			
@@ -77,9 +91,10 @@ namespace SbDisplayLib.Repositories
                 UPDATE TestOrders
                 SET StatusId = @StatusId
 				OUTPUT         
-					INSERTED.OrderId, 
+					INSERTED.TransactionId, 
 					INSERTED.StatusId,
-                WHERE OrderId = @orderId";
+                    INSERTED.OrderId
+                WHERE TransactionId = @TransactionId";
 
 
             //Så vi skal åbne vores SQL connection.
@@ -88,13 +103,14 @@ namespace SbDisplayLib.Repositories
 
             using var command = new SqlCommand(updateQuery, connection);
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)statusId;
-            command.Parameters.Add("@OrderId", SqlDbType.Int).Value = orderId;
+            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = transactionId;
 
             using var reader = command.ExecuteReader();
             if (reader.Read())
             {
                 return new Order
                 {
+                    TransactionId = (int)reader["TransactionId"],
                     Id = (int)reader["OrderId"],
                     Status = (OrderStatus)(int)reader["StatusId"]
 
