@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
+using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
@@ -14,10 +16,14 @@ namespace SbDisplayApi.Controllers
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
-        public OrdersController(IOrderRepository orderRepository)
+        private IHubContext<ShopboxHub> _shopboxHubContext;
+
+        public OrdersController(IOrderRepository orderRepository, IHubContext<ShopboxHub> shopboxHubContext)
         {
             _orderRepo = orderRepository;
+            _shopboxHubContext = shopboxHubContext;
         }
+
         // GET: api/<OrdersController>
         [HttpGet(Name = "GetAllOrders")]
         [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
@@ -55,7 +61,7 @@ namespace SbDisplayApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public IActionResult ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
+        public async Task<IActionResult> ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
         {
             // TODO ens-artet fejl håndtering
             try
@@ -66,9 +72,15 @@ namespace SbDisplayApi.Controllers
                     return NotFound($"Order with transaction-Id {transactionId} was not found.");
                 }
 
-                return Ok($"Updated status for order with Id: {updatedOrder.Id} and" +
-                    $" Trasncation-Id: {updatedOrder.TransactionId}" +
-                    $" to {OrderStatusExtension.GetDisplayName(updatedOrder.Status)}");
+                await _shopboxHubContext.Clients.All.SendAsync("ReceiveOrderStatusUpdate", updatedOrder);
+
+                string message = $"""
+                    Updated status for order with Id: {updatedOrder.Id}
+                    and Trasncation-Id: {updatedOrder.TransactionId}
+                    to {OrderStatusExtension.GetDisplayName(updatedOrder.Status)}
+                    """;
+
+                return Ok(message);
             }
             catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
             {
