@@ -10,10 +10,9 @@
 
 
 export const OrderStatus = {
-    NUMBER_1: 1,
-    NUMBER_2: 2,
-    NUMBER_3: 3,
-    NUMBER_4: 4
+    UnderPreparation: 'UnderPreparation',
+    ReadyForPickup: 'ReadyForPickup',
+    Completed: 'Completed'
 } as const;
 export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 

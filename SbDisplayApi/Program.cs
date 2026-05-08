@@ -2,6 +2,7 @@
 using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.ApiClients;
 using SbDisplayLib.Handlers;
+using System.Text.Json.Serialization;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Repositories;
 
@@ -23,14 +24,17 @@ namespace SbDisplayApi
             });
 
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-
-            builder.Services.AddSignalR();
 
             builder.Services.AddCors(options =>
             {

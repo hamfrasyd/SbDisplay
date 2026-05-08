@@ -19,8 +19,8 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
   public orders: Order[] = [];
   private sub: Subscription = new Subscription();
 
-  //constructor til at hente ordrer fra api'et og gemme dem i orders arrayet
-  constructor(private signalRService: SignalRService, private order: OrdersService, private changeDetector: ChangeDetectorRef) { }
+//constructor til at hente ordrer fra api'et og gemme dem i orders arrayet
+    constructor(private signalRService: SignalRService, private orderService: OrdersService, private changeDetector: ChangeDetectorRef){}
 
   // ngOnInit til at hente ordrer når komponenten initialiseres
   ngOnInit(): void {
