@@ -77,7 +77,7 @@ namespace SbDisplayLib.Repositories
             return orderList;
         }
 
-        public Order GetById(int id)
+        public Order GetById(int transcationId)
         {
             throw new NotImplementedException();
         }
