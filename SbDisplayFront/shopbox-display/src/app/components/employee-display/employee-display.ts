@@ -17,11 +17,11 @@ export class EmployeeDisplay implements OnInit {
   public orders: Order[] = [];
 
 //constructor til at hente ordrer fra api'et og gemme dem i orders arrayet
-constructor(private order: OrdersService, private changeDetector: ChangeDetectorRef){}
+constructor(private orderService: OrdersService, private changeDetector: ChangeDetectorRef){}
 
 // ngOnInit til at hente ordrer når komponenten initialiseres
   ngOnInit(): void {
-    this.order.getAllOrders().subscribe(orders => {
+    this.orderService.getAllOrders().subscribe(orders => {
     this.orders = orders;});
     //this.changeDetector.detectChanges
     };
