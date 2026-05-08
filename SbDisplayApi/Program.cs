@@ -36,6 +36,8 @@ namespace SbDisplayApi
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
+            builder.Services.AddSignalR();
+
             builder.Services.AddCors(options =>
             {
                 // Definerer en CORS-politik ved navn "AllowAny".
