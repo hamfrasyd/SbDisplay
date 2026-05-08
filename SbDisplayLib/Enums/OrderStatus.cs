@@ -2,6 +2,11 @@
 
 namespace SbDisplayLib.Enums
 {
+    /// <summary>
+    /// The status of an order after a transcation has been made in the ShopBox system.
+    /// <br></br>
+    /// The status is used to track the progress of an order from the moment it is received until it is completed.
+    /// </summary>
     public enum OrderStatus
     {
         [Display(Name = "Received")]

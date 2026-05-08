@@ -1,0 +1,49 @@
+﻿using FluentAssertions;
+using Moq;
+using SbDisplayLib.Enums;
+using SbDisplayLib.Handlers;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Models;
+
+namespace SbDisplay.Tests.SbDisplayLib.Handlers
+{
+    public class NewOrderHandlerTests
+    {
+        private readonly Mock<IOrderApiClient> _orderApiClientMock;
+        private readonly Mock<IOrderRepository> _orderRepositoryMock;
+
+        public NewOrderHandlerTests()
+        {
+            _orderApiClientMock = new Mock<IOrderApiClient>();
+            _orderRepositoryMock = new Mock<IOrderRepository>();
+        }
+
+        [Fact]
+        public async Task Handler_Should_Process_New_Order_Successfully_Async()
+        {
+            // Arrange
+            int transactionId = 123;
+
+            Order apiOrder = new Order
+            {
+                Id = 100,
+                TransactionId = transactionId,
+                CreationTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Items = null,
+                Status = OrderStatus.Receieved
+            };
+
+            _orderApiClientMock.Setup(client => client.GetOrderAsync(transactionId)).ReturnsAsync(apiOrder);
+            _orderRepositoryMock.Setup(repo => repo.Create(apiOrder)).Returns(apiOrder);
+
+            NewOrderHandler handler = new(_orderApiClientMock.Object, _orderRepositoryMock.Object);
+
+            // Act
+            Order result = await handler.ProcessNewOrder(transactionId);
+
+            // Assert
+            result.TransactionId.Should().Be(transactionId);
+            result.Status.Should().Be(OrderStatus.Receieved);
+        }
+    }
+}
