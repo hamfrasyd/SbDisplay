@@ -66,21 +66,23 @@ namespace SbDisplayApi.Controllers
             // TODO ens-artet fejl håndtering
             try
             {
+                Console.WriteLine($"Updating order with transactionId: {transactionId}");
+
                 Order? updatedOrder = _orderRepo.UpdateOrderStatus(transactionId, request.Status);
+
                 if (updatedOrder is null)
                 {
+                    Console.WriteLine("Order was not found.");
                     return NotFound($"Order with transaction-Id {transactionId} was not found.");
                 }
 
+                Console.WriteLine($"Order updated. Sending SignalR event for order id: {updatedOrder.Id}, status: {updatedOrder.Status}");
+
                 await _shopboxHubContext.Clients.All.SendAsync("ReceiveOrderStatusUpdate", updatedOrder);
 
-                string message = $"""
-                    Updated status for order with Id: {updatedOrder.Id}
-                    and Trasncation-Id: {updatedOrder.TransactionId}
-                    to {OrderStatusExtension.GetDisplayName(updatedOrder.Status)}
-                    """;
+                Console.WriteLine("SignalR event sent.");
 
-                return Ok(message);
+                return Ok(updatedOrder);
             }
             catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
             {

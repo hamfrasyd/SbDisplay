@@ -28,7 +28,7 @@ namespace SbDisplayApi.Controllers
         public async Task<IActionResult> Post([FromBody] TransactionDto value)
         {
             Order order = await _newOrderHandler.ProcessNewOrder(value.id);
-            await _shopboxHubContext.Clients.All.SendAsync("ReceiveOrderStatusUpdate", order);
+            await _shopboxHubContext.Clients.All.SendAsync("ReceiveNewOrderNotification", order);
 
             return Ok();
         }

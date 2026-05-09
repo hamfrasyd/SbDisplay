@@ -11,30 +11,31 @@ export class SignalRService {
     public updatedOrder$ = new Subject<Order>();
     public newOrder$ = new Subject<Order>();
 
+
     public startConnection(): void {
         this.hubConnection = new signalR.HubConnectionBuilder()
-            .withUrl('https://localhost:5180/SignalR/Hubs/ShopboxHub', {
+            .withUrl('http://localhost:5180/SignalR/Hubs/ShopboxHub', {
                 withCredentials: true
             })
-            .withAutomaticReconnect()       // Auto-reconnect on drop
+            .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Information)
             .build();
+
+        this.hubConnection.on('ReceiveNewOrderNotification', (order: Order) => {
+            console.log('SignalR received new order:', order);
+            this.newOrder$.next(order);
+        });
+
+        this.hubConnection.on('ReceiveOrderStatusUpdate', (order: Order) => {
+            console.log('SignalR received order update:', order);
+            this.updatedOrder$.next(order);
+        });
 
         this.hubConnection
             .start()
             .then(() => console.log('SignalR connected'))
             .catch(err => console.error('SignalR error:', err));
-
-        // Listen for server-pushed events
-        this.hubConnection.on('ReceiveNewOrderNotification', (order: Order) => {
-            this.newOrder$.next(order);
-        });
-
-        this.hubConnection.on('ReceiveOrderStatusUpdate', (order: Order) => {
-            this.updatedOrder$.next(order);
-        });
     }
-
     public stopConnection(): void {
         this.hubConnection?.stop();
     }

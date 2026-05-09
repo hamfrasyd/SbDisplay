@@ -36,7 +36,12 @@ namespace SbDisplayApi
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-            builder.Services.AddSignalR();
+            builder.Services
+                .AddSignalR()
+                .AddJsonProtocol(options =>
+                {
+                    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
 
             builder.Services.AddCors(options =>
             {
@@ -44,7 +49,7 @@ namespace SbDisplayApi
                 // Denne politik er meget åben og bruges ofte under udvikling eller til offentlige API'er, hvor bred adgang er ønsket.
                 options.AddPolicy("ShopboxdisplayPolicy", policy =>
                 {
-                    policy.WithOrigins("https://localhost:7038", "http://localhost:5180", "http://localhost:5180", "https://shopboxdisplay.azurewebsites.net/")        // Tillader anmodninger fra disse domæner.
+                    policy.WithOrigins("https://localhost:4200", "http://localhost:4200")        // Tillader anmodninger fra disse domæner.
                           .AllowAnyHeader()      // Tillader alle HTTP-headere i anmodningen.
                           .AllowAnyMethod()     // Tillader alle HTTP-metoder (GET, POST, PUT, DELETE, etc.).
                           .AllowCredentials(); // Tillader brug af legitimationsoplysninger (cookies, autorisationstokens, etc.) i anmodninger. Dette er required for SignalR.
