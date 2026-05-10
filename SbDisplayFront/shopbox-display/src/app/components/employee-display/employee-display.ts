@@ -101,6 +101,10 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
     // Opretter et nyt array, så Angular tydeligt kan se, at listen er ændret.
     // "..." betyder er "spread operator"
     this.orders = [...this.orders, newOrder];
+
+    // SignalR-opdateringen når frem til komponenten, men Angular opdaterer ikke altid viewet automatisk.
+    // Derfor tvinger vi Angular til at tjekke template igen efter statusændringen.
+    this.changeDetector.detectChanges();
   }
 
   private updateOrderStatusInList(updatedOrder: Order): void {
