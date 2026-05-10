@@ -36,10 +36,13 @@ namespace SbDisplayApi
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-            builder.Services
-                .AddSignalR()
+            // Registrerer SignalR i dependency injection containeren.
+            // Det gør det muligt at bruge ShopboxHub og IHubContext<ShopboxHub> i controllers.
+            builder.Services.AddSignalR()
                 .AddJsonProtocol(options =>
                 {
+                    // Sørger for at enum-værdier sendes som tekst i SignalR-beskeder.
+                    // Uden dette kan Angular modtage fx 1, 2, 3 i stedet for "UnderPreparation", "ReadyForPickup", "Completed".
                     options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
 
@@ -69,6 +72,8 @@ namespace SbDisplayApi
             // Siger UseCors("ShopboxdisplayPolicy") efter UseAuthorization, så CORS-politikken virker efter at brugeren er autentificeret.
             app.UseCors("ShopboxdisplayPolicy");
 
+            // Mapper SignalR hub'en til en URL, som Angular kan forbinde til.
+            // Denne route skal matche URL'en i signalr.service.ts.
             app.MapHub<ShopboxHub>("/SignalR/Hubs/ShopboxHub");
 
             app.MapControllers();

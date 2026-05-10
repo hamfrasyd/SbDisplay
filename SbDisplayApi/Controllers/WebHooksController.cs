@@ -14,6 +14,9 @@ namespace SbDisplayApi.Controllers
     public class WebHooksController : ControllerBase
     {
         private NewOrderHandler _newOrderHandler;
+
+        // Giver controlleren adgang til SignalR, så webhook'et kan give frontend besked,
+        // når en ny ordre er blevet oprettet i systemet.
         private IHubContext<ShopboxHub> _shopboxHubContext;
 
         public WebHooksController(NewOrderHandler newOrderHandler, IHubContext<ShopboxHub> shopboxHubContext)
@@ -28,6 +31,9 @@ namespace SbDisplayApi.Controllers
         public async Task<IActionResult> Post([FromBody] TransactionDto value)
         {
             Order order = await _newOrderHandler.ProcessNewOrder(value.id);
+
+            // Sender den nye ordre ud til alle åbne frontend-klienter.
+            // Angular lytter på "ReceiveNewOrderNotification" og tilføjer ordren til listen.
             await _shopboxHubContext.Clients.All.SendAsync("ReceiveNewOrderNotification", order);
 
             return Ok();

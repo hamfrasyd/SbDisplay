@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 // importer api og orderklasse 
 import { OrdersService, Order } from '../../generated/orders';
@@ -15,18 +15,25 @@ import { Subscription } from 'rxjs';
   styleUrl: './employee-display.css',
 })
 export class EmployeeDisplay implements OnInit, OnDestroy {
-
   //Opretter en tomt array til at holde ordrer
   public orders: Order[] = [];
+
+  // Samler alle subscriptions, så de kan stoppes samlet i ngOnDestroy.
   private sub: Subscription = new Subscription();
+
+  // Bruges til at undgå, at SignalR startes under Server Side Rendering.
   private isBrowser: boolean;
 
   //constructor til at hente ordrer fra api'et og gemme dem i orders arrayet
-  constructor(private signalRService: SignalRService,
+  constructor(
+    private signalRService: SignalRService,
     private orderService: OrdersService,
     private changeDetector: ChangeDetectorRef,
     @Inject(PLATFORM_ID) platformId: object
   ) {
+    // PLATFORM_ID fortæller om Angular-koden kører i browseren eller på serveren.
+    // Det er relevant fordi projektet bruger SSR/hydration.
+    // PLATFORM_ID har værdien: "browser" eller "server".
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
@@ -34,6 +41,8 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadOrders();
 
+    // SignalR skal kun startes i browseren.
+    // Under SSR findes der ikke en rigtig browserklient, som skal modtage live updates.
     if (!this.isBrowser) {
       return;
     }
@@ -43,20 +52,26 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Stopper alle subscriptions, så komponenten ikke fortsætter med at lytte efter den er væk.
     this.sub.unsubscribe();
 
+    // Stopper kun SignalR hvis forbindelsen faktisk kunne være startet i browseren.
+    // Fordi ngOnDestroy også kan køre under SSR, hvor SignalR ikke startes.
+    // Det kan skabe fejl at prøve at stoppe en ikke-startet SignalR-forbindelse.
     if (this.isBrowser) {
       this.signalRService.stopConnection();
     }
   }
-  
+
   private loadOrders(): void {
+    // Henter det nuværende ordre-overblik fra API'et.
     this.orderService.getAllOrders().subscribe(orders => {
       this.orders = orders ?? [];
     });
   }
 
   private registerSignalRSubscriptions(): void {
+    // Lytter efter nye ordrer fra SignalRService.
     this.sub.add(
       this.signalRService.newOrder$.subscribe(newOrder => {
         console.log('EmployeeDisplay received new order:', newOrder);
@@ -64,6 +79,7 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
       })
     );
 
+    // Lytter efter statusopdateringer fra SignalRService.
     this.sub.add(
       this.signalRService.updatedOrder$.subscribe(updatedOrder => {
         console.log('EmployeeDisplay received updated order:', updatedOrder);
@@ -73,6 +89,7 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
   }
 
   private addOrderToList(newOrder: Order): void {
+    // TransactionId bruges som unik nøgle for DOM, fordi OrderId'et kan potentielt gentage sig.
     const orderAlreadyExists = this.orders.some(order =>
       order.transactionId === newOrder.transactionId
     );
@@ -81,21 +98,30 @@ export class EmployeeDisplay implements OnInit, OnDestroy {
       return;
     }
 
+    // Opretter et nyt array, så Angular tydeligt kan se, at listen er ændret.
+    // "..." betyder er "spread operator"
     this.orders = [...this.orders, newOrder];
   }
 
   private updateOrderStatusInList(updatedOrder: Order): void {
+    // SignalR-opdateringen indeholder kun delvis ordredata.
+    // Derfor opdateres kun status, så vi ikke overskriver fx items eller creationTime.
     this.orders = this.orders.map(order => {
+      // Hvis det ikke er den opdaterede ordre, returneres den uændret.
       if (order.transactionId !== updatedOrder.transactionId) {
         return order;
       }
 
       return {
+        // "..." betyder "spread operator" og laver en kopi af den eksisterende ordre.
         ...order,
+        // Opdaterer kun status, så vi ikke overskriver fx items eller creationTime.
         status: updatedOrder.status
       };
     });
 
+    // SignalR-opdateringen når frem til komponenten, men Angular opdaterer ikke altid viewet automatisk.
+    // Derfor tvinger vi Angular til at tjekke template igen efter statusændringen.
     this.changeDetector.detectChanges();
   }
 }

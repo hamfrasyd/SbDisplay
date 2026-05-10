@@ -16,6 +16,9 @@ namespace SbDisplayApi.Controllers
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
+
+        // Giver controlleren adgang til SignalR hub'en uden at være inde i selve Hub-klassen.
+        // Bruges til at sende live updates til Angular, når en ordre ændrer status.
         private IHubContext<ShopboxHub> _shopboxHubContext;
 
         public OrdersController(IOrderRepository orderRepository, IHubContext<ShopboxHub> shopboxHubContext)
@@ -66,27 +69,18 @@ namespace SbDisplayApi.Controllers
             // TODO ens-artet fejl håndtering
             try
             {
-                Console.WriteLine($"Updating order with transactionId: {transactionId}");
-
                 Order? updatedOrder = _orderRepo.UpdateOrderStatus(transactionId, request.Status);
 
                 if (updatedOrder is null)
                 {
-                    Console.WriteLine("Order was not found.");
                     return NotFound($"Order with transaction-Id {transactionId} was not found.");
                 }
 
-                Console.WriteLine($"Order updated. Sending SignalR event for order id: {updatedOrder.Id}, status: {updatedOrder.Status}");
-
+                // Sender den opdaterede ordre ud til alle tilsluttede frontend-klienter.
+                // Angular lytter på "ReceiveOrderStatusUpdate" og opdaterer status på den eksisterende ordre i listen.
                 await _shopboxHubContext.Clients.All.SendAsync("ReceiveOrderStatusUpdate", updatedOrder);
 
-                Console.WriteLine("SignalR event sent.");
-
                 return Ok(updatedOrder);
-            }
-            catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
-            {
-                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
