@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
+using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
@@ -14,10 +16,17 @@ namespace SbDisplayApi.Controllers
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
-        public OrdersController(IOrderRepository orderRepository)
+
+        // Giver controlleren adgang til SignalR hub'en uden at være inde i selve Hub-klassen.
+        // Bruges til at sende live updates til Angular, når en ordre ændrer status.
+        private IHubContext<ShopboxHub> _shopboxHubContext;
+
+        public OrdersController(IOrderRepository orderRepository, IHubContext<ShopboxHub> shopboxHubContext)
         {
             _orderRepo = orderRepository;
+            _shopboxHubContext = shopboxHubContext;
         }
+
         // GET: api/<OrdersController>
         [HttpGet(Name = "GetAllOrders")]
         [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
@@ -55,24 +64,23 @@ namespace SbDisplayApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public IActionResult ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
+        public async Task<IActionResult> ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
         {
             // TODO ens-artet fejl håndtering
             try
             {
                 Order? updatedOrder = _orderRepo.UpdateOrderStatus(transactionId, request.Status);
+
                 if (updatedOrder is null)
                 {
                     return NotFound($"Order with transaction-Id {transactionId} was not found.");
                 }
 
-                return Ok($"Updated status for order with Id: {updatedOrder.Id} and" +
-                    $" Trasncation-Id: {updatedOrder.TransactionId}" +
-                    $" to {OrderStatusExtension.GetDisplayName(updatedOrder.Status)}");
-            }
-            catch (ArgumentException ex) // 'ArgumentNullException' and 'ArgumentOutOfRangeException' inhreits from  'ArgumentException'
-            {
-                return BadRequest(ex.Message);
+                // Sender den opdaterede ordre ud til alle tilsluttede frontend-klienter.
+                // Angular lytter på "ReceiveOrderStatusUpdate" og opdaterer status på den eksisterende ordre i listen.
+                await _shopboxHubContext.Clients.All.SendAsync("ReceiveOrderStatusUpdate", updatedOrder);
+
+                return Ok(updatedOrder);
             }
             catch (Exception ex)
             {
