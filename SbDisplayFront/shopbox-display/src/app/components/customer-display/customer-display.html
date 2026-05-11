@@ -3,8 +3,13 @@
     <h2>Tilbereder</h2>
 
     <div class="queue">
-      <div class="queue-item">6499</div>
-      <div class="queue-item">6500</div>
+      @if (orderDisplayState.preparingOrders$ | async; as preparingOrders) {
+      @for (order of preparingOrders; track order.transactionId) {
+      <div class="queue-item">
+        {{ order.id }}
+      </div>
+      }
+      }
     </div>
   </div>
 
@@ -13,8 +18,14 @@
   <div class="column right">
     <h2>Hent</h2>
 
-    <div class="current">
-      6498
+    <div class="queue">
+      @if (orderDisplayState.readyForPickupOrders$ | async; as readyForPickupOrders) {
+      @for (order of readyForPickupOrders; track order.transactionId) {
+      <div class="current">
+        {{ order.id }}
+      </div>
+      }
+      }
     </div>
   </div>
 </div>
