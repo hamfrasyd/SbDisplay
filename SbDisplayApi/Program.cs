@@ -1,8 +1,10 @@
 
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Repositories;
+using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.ApiClients;
 using SbDisplayLib.Handlers;
+using System.Text.Json.Serialization;
+using SbDisplayLib.Interfaces;
+using SbDisplayLib.Repositories;
 
 namespace SbDisplayApi
 {
@@ -20,24 +22,40 @@ namespace SbDisplayApi
             {
                 client.BaseAddress = new Uri("https://api.shopbox.com/");
             });
-            
 
-            builder.Services.AddControllers();
+
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
+            // Registrerer SignalR i dependency injection containeren.
+            // Det g√∏r det muligt at bruge ShopboxHub og IHubContext<ShopboxHub> i controllers.
+            builder.Services.AddSignalR()
+                .AddJsonProtocol(options =>
+                {
+                    // S√∏rger for at enum-v√¶rdier sendes som tekst i SignalR-beskeder.
+                    // Uden dette kan Angular modtage fx 1, 2, 3 i stedet for "UnderPreparation", "ReadyForPickup", "Completed".
+                    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
             builder.Services.AddCors(options =>
             {
                 // Definerer en CORS-politik ved navn "AllowAny".
-                // Denne politik er meget Âben og bruges ofte under udvikling eller til offentlige API'er, hvor bred adgang er ¯nsket.
-                options.AddPolicy("AllowAny", policy =>
+                // Denne politik er meget √•ben og bruges ofte under udvikling eller til offentlige API'er, hvor bred adgang er √∏nsket.
+                options.AddPolicy("ShopboxdisplayPolicy", policy =>
                 {
-                    policy.AllowAnyOrigin()        // Tillader anmodninger fra enhver oprindelse (ethvert domÊne).
+                    policy.WithOrigins("https://mango-island-0f3576a10.7.azurestaticapps.net", "https://localhost:4200", "http://localhost:4200")        // Tillader anmodninger fra disse dom√¶ner.
                           .AllowAnyHeader()      // Tillader alle HTTP-headere i anmodningen.
-                          .AllowAnyMethod();    // Tillader alle HTTP-metoder (GET, POST, PUT, DELETE, etc.).
+                          .AllowAnyMethod()     // Tillader alle HTTP-metoder (GET, POST, PUT, DELETE, etc.).
+                          .AllowCredentials(); // Tillader brug af legitimationsoplysninger (cookies, autorisationstokens, etc.) i anmodninger. Dette er required for SignalR.
                 });
             });
             var app = builder.Build();
@@ -45,14 +63,18 @@ namespace SbDisplayApi
             // Configure the HTTP request pipeline.
             app.UseSwagger();
             app.UseSwaggerUI();
-            
+
 
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
-            // Siger UseCors("AllowAny") efter UseAuthorization, sÂ CORS-politikken virker efter at brugeren er autentificeret.
-            app.UseCors("AllowAny");
+            // Siger UseCors("ShopboxdisplayPolicy") efter UseAuthorization, s√• CORS-politikken virker efter at brugeren er autentificeret.
+            app.UseCors("ShopboxdisplayPolicy");
+
+            // Mapper SignalR hub'en til en URL, som Angular kan forbinde til.
+            // Denne route skal matche URL'en i signalr.service.ts.
+            app.MapHub<ShopboxHub>("/SignalR/Hubs/ShopboxHub");
 
             app.MapControllers();
 

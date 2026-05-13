@@ -1,0 +1,31 @@
+<div class="display">
+  <div class="column left">
+    <h2>Tilbereder</h2>
+
+    <div class="queue">
+      @if (orderDisplayState.preparingOrders$ | async; as preparingOrders) {
+      @for (order of preparingOrders; track order.transactionId) {
+      <div class="queue-item">
+        {{ order.id }}
+      </div>
+      }
+      }
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="column right">
+    <h2>Hent</h2>
+
+    <div class="queue">
+      @if (orderDisplayState.readyForPickupOrders$ | async; as readyForPickupOrders) {
+      @for (order of readyForPickupOrders; track order.transactionId) {
+      <div class="current">
+        {{ order.id }}
+      </div>
+      }
+      }
+    </div>
+  </div>
+</div>

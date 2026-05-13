@@ -3,8 +3,18 @@ using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Converters
 {
+    /// <summary>
+    /// Converter for converting OrderDto objects retrieved from the ShopBox API into Order objects used within the application.
+    /// </summary>
     public static class OrderDtoToOrderConverter
     {
+        /// <summary>
+        /// Method for converting an OrderDto object into an Order object.
+        /// <br></br>
+        /// This involves mapping the properties from the DTO to the corresponding properties in the Order model.
+        /// </summary>
+        /// <param name="data">OrderDto object containing the data to be converted.</param>
+        /// <returns>Order object with properties populated based on the provided OrderDto.</returns>
         public static Order Convert(OrderDto data) 
         { 
             Order order = new Order() 

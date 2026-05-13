@@ -35,7 +35,7 @@ namespace SbDisplayLib.ApiClients
             }
 
             var order = OrderDtoToOrderConverter.Convert(result);
-            order.Status = OrderStatus.Receieved;
+            order.Status = (OrderStatus)1;
 
             return order;
         }
