@@ -30,7 +30,7 @@ namespace SbDisplay.Tests.SbDisplayLib.Handlers
                 TransactionId = transactionId,
                 CreationTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Items = null,
-                Status = OrderStatus.Receieved
+                Status = OrderStatus.UnderPreparation
             };
 
             _orderApiClientMock.Setup(client => client.GetOrderAsync(transactionId)).ReturnsAsync(apiOrder);
@@ -43,7 +43,7 @@ namespace SbDisplay.Tests.SbDisplayLib.Handlers
 
             // Assert
             result.TransactionId.Should().Be(transactionId);
-            result.Status.Should().Be(OrderStatus.Receieved);
+            result.Status.Should().Be(OrderStatus.UnderPreparation);
         }
     }
 }
