@@ -4,6 +4,7 @@ pr:
   branches:
     include:
       - master
+
 trigger:
   branches:
     include:
@@ -11,36 +12,45 @@ trigger:
 
 jobs:
 - job: build_and_deploy_job
-  displayName: Build and Deploy Job
-  condition: or(eq(variables['Build.Reason'], 'Manual'),or(eq(variables['Build.Reason'], 'PullRequest'),eq(variables['Build.Reason'], 'IndividualCI')))
+  displayName: Build and Deploy Angular App
+  condition: or(
+    eq(variables['Build.Reason'], 'Manual'),
+    eq(variables['Build.Reason'], 'PullRequest'),
+    eq(variables['Build.Reason'], 'IndividualCI')
+  )
   pool:
     vmImage: ubuntu-latest
+
   variables:
   - group: Azure-Static-Web-Apps-mango-island-0f3576a10-variable-group
+
   steps:
   - checkout: self
     submodules: true
 
   - task: NodeTool@0
+    displayName: Install Node.js
     inputs:
       versionSpec: '20.x'
-    displayName: Install Node.js
 
-  - script: npm install
+  - script: npm ci
     workingDirectory: '$(Build.SourcesDirectory)/SbDisplayFront/shopbox-display'
-    displayName: npm install
+    displayName: Install dependencies
 
   - script: npm run build
     workingDirectory: '$(Build.SourcesDirectory)/SbDisplayFront/shopbox-display'
-    displayName: npm run build
+    displayName: Build Angular app
 
-  - script: find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -type f | head -50
+  - script: |
+      echo "Checking Angular build output:"
+      find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -maxdepth 4 -type f | head -50
     displayName: Debug output structure
 
   - task: AzureStaticWebApp@0
+    displayName: Deploy Angular app to Azure Static Web Apps
     inputs:
       azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_MANGO_ISLAND_0F3576A10)
-      app_location: "/SbDisplayFront/shopbox-display/src"
+      app_location: "SbDisplayFront/shopbox-display/dist/shopbox-display/browser"
       api_location: ""
-      output_location: "dist/shopbox-display/browser"
+      output_location: ""
       skip_app_build: true
