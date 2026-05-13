@@ -1,0 +1,52 @@
+<div class="container mt-4">
+  <div class="row g-4">
+    @if (orderDisplayState.orders$ | async; as orders) {
+    @for (order of orders; track order.transactionId) {
+    <div class="col-12 col-md-6 col-lg-4">
+      <mat-card class="h-100 shadow-sm">
+        <mat-card-header class="bg-blue">
+          <mat-card-title>
+            OrderNumber {{ order.id ?? 'N/A'}}
+          </mat-card-title>
+
+          <mat-card-subtitle>
+            Transaction: {{ order.transactionId ?? 'N/A' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="mt-3">
+          <p class="mb-2">
+            <strong>Status:</strong> {{ order.status }}
+          </p>
+
+          <p class="mb-2">
+            <strong>Items:</strong>
+          </p>
+
+          @if (order.items?.length) {
+          <ul class="list-group list-group-flush mb-3">
+            @for (item of order.items; track item.id) {
+            <li class="list-group-item px-0">
+              <strong>#{{ item.id }}</strong>
+              {{ item.name }}
+            </li>
+            }
+          </ul>
+          } @else {
+          <p class="text-muted mb-3">
+            No items
+          </p>
+          }
+
+        </mat-card-content>
+        <mat-card-footer class="bg-light p-3 mt-auto">
+          <p class="mb-0">
+            <strong>Created:</strong> {{ order.creationTime }}
+          </p>
+        </mat-card-footer>
+      </mat-card>
+    </div>
+    }
+    }
+  </div>
+</div>
