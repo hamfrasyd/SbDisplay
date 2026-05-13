@@ -17,7 +17,7 @@ jobs:
     vmImage: ubuntu-latest
   variables:
   - group: Azure-Static-Web-Apps-mango-island-0f3576a10-variable-group
-steps:
+  steps:
   - checkout: self
     submodules: true
 
