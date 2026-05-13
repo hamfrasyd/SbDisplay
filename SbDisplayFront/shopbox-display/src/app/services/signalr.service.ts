@@ -14,7 +14,7 @@ export class SignalRService {
     public updatedOrder$ = new Subject<Order>();
 
     // URL til SignalR Hub'en i ASP.NET API'et
-  private apiUrl = 'http://localhost:5180/SignalR/Hubs/ShopboxHub';
+  private apiUrl = 'shopboxdisplay.azurewebsites.net/SignalR/Hubs/ShopboxHub';
 
     public startConnection(): void {
         // Opretter forbindelsen til SignalR Hub'en i ASP.NET API'et.
