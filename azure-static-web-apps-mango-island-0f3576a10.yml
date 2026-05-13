@@ -44,8 +44,8 @@ jobs:
     displayName: Debug output structure
 
   - script: |
-    echo "Build output:"
-    find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -name "index.html"
+      echo "Build output:"
+      find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -name "index.html"
     displayName: Find index.html
 
   - task: AzureStaticWebApp@0
