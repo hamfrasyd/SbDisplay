@@ -43,11 +43,16 @@ jobs:
       find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -maxdepth 4 -type f | head -50
     displayName: Debug output structure
 
+  - script: |
+    echo "Build output:"
+    find $(Build.SourcesDirectory)/SbDisplayFront/shopbox-display/dist -name "index.html"
+    displayName: Find index.html
+
   - task: AzureStaticWebApp@0
     displayName: Deploy Angular app to Azure Static Web Apps
     inputs:
       azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_MANGO_ISLAND_0F3576A10)
-      app_location: "SbDisplayFront/shopbox-display/dist/shopbox-display/browser"
+      app_location: app_location: "SbDisplayFront/shopbox-display/dist/shopbox-display"
       api_location: ""
       output_location: ""
       skip_app_build: true
