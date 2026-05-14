@@ -18,4 +18,16 @@ export class EmployeeDisplay implements OnInit {
     // Selve SignalR- og liste-logikken ligger i OrderDisplayStateService, så den ikke gentages i flere komponenter.
     this.orderDisplayState.initialize();
   }
+
+  public markAsReadyForPickup(transactionId: number): void {
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'ReadyForPickup' });
+  }
+
+  public markAsUnderPreparation(transactionId: number): void {
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'UnderPreparation' });
+  }
+
+  public markAsCompleted(transactionId: number): void {
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'Completed' });
+  }
 }
