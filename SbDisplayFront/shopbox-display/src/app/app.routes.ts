@@ -4,7 +4,7 @@ import { EmployeeDisplay } from './components/employee-display/employee-display'
 import { LandingPage } from './components/landing-page/landing-page'
 
 export const routes: Routes = [
-    { path: 'landingpage', component: LandingPage},
+    { path: '', component: LandingPage},
     { path: 'customer', component: CustomerDisplay}, 
     { path: 'employee', component: EmployeeDisplay }];
 
