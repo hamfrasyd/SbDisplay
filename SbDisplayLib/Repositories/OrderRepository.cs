@@ -87,24 +87,20 @@ namespace SbDisplayLib.Repositories
             return orderList;
         }
 
-        public Order GetById(int transcationId)
-        {
-            throw new NotImplementedException();
-        }
-
         public Order? UpdateOrderStatus(int transactionId, OrderStatus statusId)
         {
             //Vi skal validerer vores parameter input. (Handler?)
             //Vi skal lave et SQL script.			
-            const string updateQuery =
-                @"
-                UPDATE TestOrders
+            const string updateQuery ="""
+                UPDATE Orders
                 SET StatusId = @StatusId
-				OUTPUT         
-					INSERTED.TransactionId, 
-					INSERTED.StatusId,
-                    INSERTED.OrderId
-                WHERE TransactionId = @TransactionId";
+                OUTPUT
+                INSERTED.TransactionId,
+                INSERTED.StatusId,
+                INSERTED.OrderId,
+                INSERTED.CreationTime
+                WHERE TransactionId = @TransactionId
+                """;
 
 
             //Så vi skal åbne vores SQL connection.
@@ -116,18 +112,23 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = transactionId;
 
             using var reader = command.ExecuteReader();
+
+            int orderIdOrdinal = reader.GetOrdinal("OrderId");
+            int transactionOrdinal = reader.GetOrdinal("TransactionId");
+            int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationOrdinal = reader.GetOrdinal("CreationTime");
+
             if (reader.Read())
             {
                 return new Order
                 {
-                    TransactionId = (int)reader["TransactionId"],
-                    Id = (int)reader["OrderId"],
-                    Status = (OrderStatus)(int)reader["StatusId"]
-
+                    Id = reader.GetInt32(orderIdOrdinal),
+                    TransactionId = reader.GetInt32(transactionOrdinal),
+                    Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                    CreationTime = reader.GetInt64(creationOrdinal)
                 };
             }
             return null;
-
         }
     }
 }

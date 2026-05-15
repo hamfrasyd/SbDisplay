@@ -22,7 +22,5 @@ namespace SbDisplayLib.Interfaces
         /// <summary>Retrieves all orders from the database.</summary>
         /// <returns>A list of retrieved orders</returns>
         public List<Order> GetAll();
-
-        public Order GetById(int transcationId);
     }
 }
