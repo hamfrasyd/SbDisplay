@@ -1,7 +1,7 @@
 import { Inject, Injectable, NgZone, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, map, Observable, Subscription } from 'rxjs';
-import { OrdersService, Order } from '../generated/orders';
+import { OrdersService, Order, UpdateOrderStatusRequest } from '../generated/orders';
 import { SignalRService } from './signalr.service';
 
 @Injectable({ providedIn: 'root' })
@@ -140,5 +140,20 @@ export class OrderDisplayStateService {
     private hasStatus(order: Order, status: string): boolean {
         // Forventer at backend sender enum-værdier som tekst, fx "UnderPreparation".
         return String(order.status) === status;
+    }
+
+    public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): void {
+        this.orderService.updateOrderStatus(transactionId, newStatus).subscribe({
+            next: updatedOrder => {
+                this.ngZone.run(() => {
+                    this.updateOrderStatusInList(updatedOrder);
+                });
+
+                console.log(`Order ${transactionId} status updated to ${newStatus.status}`);
+            },
+            error: err => {
+                console.error(`Failed to update order ${transactionId} status:`, err);
+            }
+        });
     }
 }

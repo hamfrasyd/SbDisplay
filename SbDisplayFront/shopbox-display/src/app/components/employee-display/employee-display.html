@@ -43,6 +43,17 @@
           <p class="mb-0">
             <strong>Created:</strong> {{ order.creationTime }}
           </p>
+          <button mat-raised-button color="primary" class="mt-2" (click)="markAsReadyForPickup(order.transactionId!)">
+            Mark as Ready for Pickup
+          </button>
+
+          <button mat-raised-button color="accent" class="mt-2 ms-2" (click)="markAsCompleted(order.transactionId!)">
+            Mark as Completed
+          </button>
+
+          <button mat-raised-button color="warn" class="mt-2 ms-2" (click)="markAsUnderPreparation(order.transactionId!)">
+            Mark as Under Preparation
+          </button>
         </mat-card-footer>
       </mat-card>
     </div>
