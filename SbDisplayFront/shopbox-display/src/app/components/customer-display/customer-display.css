@@ -1,60 +1,80 @@
-/* Fill the whole screen */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 .display {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: #f5f7fa;
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   box-sizing: border-box;
 }
 
-/* Each side fills its half of the screen */
 .column {
-  flex: 1;                 /* 50/50 split */
-  height: 100%;            /* full height */
-  padding: 48px;           /* a bit more breathing room */
+  flex: 1;
+  height: 100%;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .left h2,
 .right h2 {
   font-size: 32px;
+  font-weight: 800;
+  color: #1a1a1a;
   margin: 0 0 32px 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e8e8e8;
+  text-align: center;
 }
 
 .queue {
   display: flex;
+  flex-wrap: wrap;
   gap: 24px;
   align-items: flex-start;
-
+  align-content: flex-start;
+  justify-content: flex-start;
 }
 
-.queue-item {
-  background: #000;
-  color: #fff;
+/* LEFT — 5 per row, smaller */
+.left .queue-item {
+  background: gray;
+  color: #ffffff;
+  font-size: 48px;
+  font-weight: 800;
+  width: calc((100% - 4 * 24px) / 5);
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1.5px solid #e8e8e8;
+}
+
+/* RIGHT — 3 per row, larger */
+.right .current {
+  background: #3ab54a;
+  color: #ffffff;
   font-size: 64px;
   font-weight: 800;
-  padding: 24px 40px;
-
+  width: calc((100% - 2 * 24px) / 3);
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  letter-spacing: 2px;
 }
 
 .divider {
   width: 2px;
-  background: #ccc;
-  margin: 0 24px;
+  background: #e8e8e8;
+  margin: 48px 0;
+  flex-shrink: 0;
 }
-
-.current {
-  display: inline-block;
-  background: #2e7d32;
-  color: #fff;
-  font-size: 72px;
-  font-weight: bold;
-  padding: 24px 48px;
-  
-  letter-spacing: 2px;
-
-  /* optional: keep it visually centered-ish in the right column */
-  margin-top: 8px;
-
-}
-
