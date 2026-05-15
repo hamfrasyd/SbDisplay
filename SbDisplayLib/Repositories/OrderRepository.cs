@@ -19,17 +19,17 @@ namespace SbDisplayLib.Repositories
         public Order Create(Order newOrder)
         {
             const string sql = """
-            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId, CreationTime)
-            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId, INSERTED.CreationTime
-            VALUES (@OrderId, @StatusId, @TransactionId, @CreationTime)
+            INSERT INTO [dbo].[Orders] (TransactionId, OrderId, StatusId, CreationTime)
+            OUTPUT INSERTED.TransactionId, INSERTED.OrderId, INSERTED.StatusId, INSERTED.CreationTime
+            VALUES (@TransactionId, @OrderId, @StatusId, @CreationTime)
             """;
 
             using var connection = new SqlConnection(_connectionString);
             using var command = new SqlCommand(sql, connection);
 
+            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.Id;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
-            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
             command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
 
             connection.Open();
@@ -39,13 +39,19 @@ namespace SbDisplayLib.Repositories
             if (!reader.Read())
                 throw new InvalidOperationException("Insert did not return the created order.");
 
+            int orderIdOrdinal = reader.GetOrdinal("OrderId");
+            int transactionOrdinal = reader.GetOrdinal("TransactionId");
+            int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationOrdinal = reader.GetOrdinal("CreationTime");
+
             return new Order
             {
-                Id = reader.GetInt32(reader.GetOrdinal("OrderId")),
-                TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
-                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
-                CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
+                Id = reader.GetInt32(orderIdOrdinal),
+                TransactionId = reader.GetInt32(transactionOrdinal),
+                Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                CreationTime = reader.GetInt64(creationOrdinal)
             };
+
         }
 
         public List<Order> GetAll()
