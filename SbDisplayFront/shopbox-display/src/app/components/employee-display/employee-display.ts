@@ -14,9 +14,6 @@ export class EmployeeDisplay implements OnInit {
   constructor(public orderDisplayState: OrderDisplayStateService) { }
 
   ngOnInit(): void {
-    // Initialiserer fælles ordre-state og live updates.
-    // Selve SignalR- og liste-logikken ligger i OrderDisplayStateService, så den ikke gentages i flere komponenter.
-    this.orderDisplayState.initialize();
   }
 
   public markAsReadyForPickup(transactionId: number): void {

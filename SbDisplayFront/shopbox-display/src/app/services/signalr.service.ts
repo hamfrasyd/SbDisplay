@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { Order } from '../generated/orders';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class SignalRService {
@@ -14,13 +15,13 @@ export class SignalRService {
     public updatedOrder$ = new Subject<Order>();
 
     // URL til SignalR Hub'en i ASP.NET API'et
-    private apiUrl = 'https://shopboxdisplay.azurewebsites.net/SignalR/Hubs/ShopboxHub';
+    private apiSignalRHubUrl = `${environment.apiUrl}/SignalR/Hubs/ShopboxHub`;
 
     public startConnection(): void {
         // Opretter forbindelsen til SignalR Hub'en i ASP.NET API'et.
         // URL'en skal pege på samme route som app.MapHub<ShopboxHub>(...) i Program.cs i API'et.
         this.hubConnection = new signalR.HubConnectionBuilder()
-            .withUrl(this.apiUrl, {
+            .withUrl(this.apiSignalRHubUrl, {
                 // Kræves når backend tillader credentials i CORS-politikken.
                 withCredentials: true
             })

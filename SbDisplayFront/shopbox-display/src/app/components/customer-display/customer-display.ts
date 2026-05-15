@@ -12,8 +12,5 @@ export class CustomerDisplay implements OnInit {
   constructor(public orderDisplayState: OrderDisplayStateService) { }
 
   ngOnInit(): void {
-    // Bruger samme fælles ordre-state som medarbejderdisplayet.
-    // Derfor får kundedisplayet også live statusændringer uden at duplikerer SignalR-kode.
-    this.orderDisplayState.initialize();
   }
 }

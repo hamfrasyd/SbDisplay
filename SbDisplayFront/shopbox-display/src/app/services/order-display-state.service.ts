@@ -1,7 +1,7 @@
 import { Inject, Injectable, NgZone, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, map, Observable, Subscription } from 'rxjs';
-import { OrdersService, Order, UpdateOrderStatusRequest } from '../generated/orders';
+import { OrdersService, Order, UpdateOrderStatusRequest, OrderStatus } from '../generated/orders';
 import { SignalRService } from './signalr.service';
 
 @Injectable({ providedIn: 'root' })
@@ -13,18 +13,16 @@ export class OrderDisplayStateService {
 
     // Kundedisplayet bruger denne stream til at vise ordrer, der er under tilberedning.
     public preparingOrders$: Observable<Order[]> = this.orders$.pipe(
-        map(orders => orders.filter(order => this.hasStatus(order, 'UnderPreparation')))
+        map(orders => orders.filter(order => order.status === OrderStatus.UnderPreparation))
     );
 
     // Kundedisplayet bruger denne stream til at vise ordrer, der er klar til afhentning.
     public readyForPickupOrders$: Observable<Order[]> = this.orders$.pipe(
-        map(orders => orders.filter(order => this.hasStatus(order, 'ReadyForPickup')))
+        map(orders => orders.filter(order => order.status === OrderStatus.ReadyForPickup))
     );
 
     private signalRSub: Subscription = new Subscription();
-    private isBrowser: boolean;
     private hasLoadedOrders = false;
-    private hasStartedLiveUpdates = false;
 
     constructor(
         private orderService: OrdersService,
@@ -32,21 +30,11 @@ export class OrderDisplayStateService {
         private ngZone: NgZone,
         @Inject(PLATFORM_ID) platformId: object
     ) {
-        // PLATFORM_ID fortæller om Angular-koden kører i browseren eller på serveren.
-        // Det er relevant fordi projektet bruger SSR/hydration.
-        this.isBrowser = isPlatformBrowser(platformId);
-    }
-
-    public initialize(): void {
         this.loadOrders();
-
-        // SignalR skal kun startes i browseren.
-        // Under SSR findes der ikke en rigtig browserklient, som skal modtage live updates.
-        if (!this.isBrowser) {
-            return;
+        if (isPlatformBrowser(platformId)) {
+            this.registerSignalRSubscriptions();
+            this.signalRService.startConnection();
         }
-
-        this.startLiveUpdates();
     }
 
     private loadOrders(): void {
@@ -55,23 +43,11 @@ export class OrderDisplayStateService {
             return;
         }
 
-        this.hasLoadedOrders = true;
-
         // Henter det nuværende ordre-overblik fra API'et.
         this.orderService.getAllOrders().subscribe(orders => {
             this.ordersSubject.next(orders ?? []);
         });
-    }
-
-    private startLiveUpdates(): void {
-        // Undgår at flere komponenter opretter flere SignalR subscriptions og forbindelser.
-        if (this.hasStartedLiveUpdates) {
-            return;
-        }
-
-        this.hasStartedLiveUpdates = true;
-        this.registerSignalRSubscriptions();
-        this.signalRService.startConnection();
+        this.hasLoadedOrders = true;
     }
 
     private registerSignalRSubscriptions(): void {
@@ -135,11 +111,6 @@ export class OrderDisplayStateService {
         });
 
         this.ordersSubject.next(updatedOrders);
-    }
-
-    private hasStatus(order: Order, status: string): boolean {
-        // Forventer at backend sender enum-værdier som tekst, fx "UnderPreparation".
-        return String(order.status) === status;
     }
 
     public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): void {
