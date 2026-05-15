@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:shopbox-display": "node dist/shopbox-display/server/server.mjs",
-    "update-openApi": "openapi-generator-cli generate -i shopboxdisplay.azurewebsites.net/swagger/v1/swagger.json -g typescript-angular -o src/app/generated/orders"
+    "update-openApi": "openapi-generator-cli generate -i http://localhost:5180/swagger/v1/swagger.json -g typescript-angular -o src/app/generated/orders"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
