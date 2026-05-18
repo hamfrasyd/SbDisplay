@@ -4,7 +4,6 @@ using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 using Microsoft.Extensions.Configuration;
 using System.Data;
-
 namespace SbDisplayLib.Repositories
 {
     public class OrderRepository : IOrderRepository
@@ -51,7 +50,39 @@ namespace SbDisplayLib.Repositories
                 Status = (OrderStatus)reader.GetInt32(statusOrdinal),
                 CreationTime = reader.GetInt64(creationOrdinal)
             };
+        }
 
+        public OrderItem CreateItemOrderRelation(Order order, OrderItem orderItem)
+        {
+            const string sql = """
+            INSERT INTO [dbo].[OrdersItems] (OrderTransactionId, ItemId, Quantity)
+            OUTPUT INSERTED.OrderTransactionId, INSERTED.ItemId, INSERTED.Quantity
+            VALUES (@OrderTransactionId, @ItemId, @Quantity)
+            """;
+
+            using var connection = new SqlConnection(_connectionString);
+            using var command = new SqlCommand(sql, connection);
+
+            command.Parameters.Add("@OrderTransactionId", SqlDbType.Int).Value = order.TransactionId;
+            command.Parameters.Add("@ItemId", SqlDbType.Int).Value = orderItem.Item.Id;
+            command.Parameters.Add("@Quantity", SqlDbType.Int).Value = orderItem.Quantity;
+
+            connection.Open();
+
+            using var reader = command.ExecuteReader();
+
+            if (!reader.Read())
+                throw new InvalidOperationException("Insert could not create the relationship between order and item");
+
+            int orderTransactionIdOrdinal = reader.GetOrdinal("OrderTransactionId");
+            int itemOrdinal = reader.GetOrdinal("ItemId");
+            int quantityOrdinal = reader.GetOrdinal("Quantity");
+
+            return new OrderItem
+            {
+                Item = orderItem.Item,
+                Quantity = orderItem.Quantity
+            };
         }
 
         public List<Order> GetAll()
