@@ -40,7 +40,7 @@
 
         <mat-card-footer class="bg-light p-3 mt-auto">
           <p class="mb-0">
-            <strong>Created:</strong> {{ order.creationTime }}
+            <strong>Created:</strong> {{ order.creationTime | date: 'HH:mm' }}
           </p>
           <button mat-raised-button color="primary" class="mt-2" (click)="markAsReadyForPickup(order.transactionId!)">
             Mark as Ready for Pickup
