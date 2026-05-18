@@ -1,7 +1,6 @@
 <div class="container mt-4">
   <div class="row g-4">
-    @if (orderDisplayState.orders$ | async; as orders) {
-    @for (order of orders; track order.transactionId) {
+    @for (order of orderDisplayState.orders(); track order.transactionId) {
     <div class="col-12 col-md-6 col-lg-4">
       <mat-card class="h-100 shadow-sm">
         <mat-card-header class="bg-blue">
@@ -37,8 +36,8 @@
             No items
           </p>
           }
-
         </mat-card-content>
+
         <mat-card-footer class="bg-light p-3 mt-auto">
           <p class="mb-0">
             <strong>Created:</strong> {{ order.creationTime }}
@@ -51,13 +50,13 @@
             Mark as Completed
           </button>
 
-          <button mat-raised-button color="warn" class="mt-2 ms-2" (click)="markAsUnderPreparation(order.transactionId!)">
+          <button mat-raised-button color="warn" class="mt-2 ms-2"
+            (click)="markAsUnderPreparation(order.transactionId!)">
             Mark as Under Preparation
           </button>
         </mat-card-footer>
       </mat-card>
     </div>
-    }
     }
   </div>
 </div>

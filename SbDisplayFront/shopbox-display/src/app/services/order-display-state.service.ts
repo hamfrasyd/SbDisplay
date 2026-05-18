@@ -1,111 +1,74 @@
-import { Inject, Injectable, NgZone, PLATFORM_ID } from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID, computed, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { BehaviorSubject, map, Observable, Subscription } from 'rxjs';
-import { OrdersService, Order, UpdateOrderStatusRequest } from '../generated/orders';
+import { OrdersService, Order, UpdateOrderStatusRequest, OrderStatus } from '../generated/orders';
 import { SignalRService } from './signalr.service';
 
+// providedIn: 'root' gør servicen til en singleton. Konstruktøren kører kun én gang i appens levetid.
 @Injectable({ providedIn: 'root' })
 export class OrderDisplayStateService {
-    private ordersSubject = new BehaviorSubject<Order[]>([]);
+    // En 'signal' er Angulars måde at holde reaktiv state. Altså, når værdien ændres, opdaterer templates der læser den sig automatisk.
+    // _orders er privat, så kun denne service kan ændre listen.
+    private readonly _orders = signal<Order[]>([]);
 
-    // orders$ er den fælles ordre-state, som både medarbejderdisplay og kundedisplay kan lytte på.
-    public orders$: Observable<Order[]> = this.ordersSubject.asObservable();
+    // Readonly view udadtil. Komponenter kan læse, men ikke kalde for eksmpel .set() på listen.
+    public readonly orders = this._orders.asReadonly();
 
-    // Kundedisplayet bruger denne stream til at vise ordrer, der er under tilberedning.
-    public preparingOrders$: Observable<Order[]> = this.orders$.pipe(
-        map(orders => orders.filter(order => this.hasStatus(order, 'UnderPreparation')))
-    );
-
-    // Kundedisplayet bruger denne stream til at vise ordrer, der er klar til afhentning.
-    public readyForPickupOrders$: Observable<Order[]> = this.orders$.pipe(
-        map(orders => orders.filter(order => this.hasStatus(order, 'ReadyForPickup')))
-    );
-
-    private signalRSub: Subscription = new Subscription();
-    private isBrowser: boolean;
-    private hasLoadedOrders = false;
-    private hasStartedLiveUpdates = false;
+    // computed() er en afledt værdi baseret på andre signaler. Den opdateres automatisk når _orders ændres.
+    // Dvs. preparingOrders og readyForPickupOrders er altid i sync med _orders fordi _orders er en signal, og computed() lytter på den.
+    // viser kun de filtrerede lister i UI'et, så komponenterne ikke behøver at gøre det.
+    public readonly preparingOrders = computed(() => {
+        return this._orders().filter(order => order.status === OrderStatus.UnderPreparation);
+    });
+    public readonly readyForPickupOrders = computed(() => {
+        return this._orders().filter(order => order.status === OrderStatus.ReadyForPickup);
+    });
 
     constructor(
         private orderService: OrdersService,
         private signalRService: SignalRService,
-        private ngZone: NgZone,
         @Inject(PLATFORM_ID) platformId: object
     ) {
-        // PLATFORM_ID fortæller om Angular-koden kører i browseren eller på serveren.
-        // Det er relevant fordi projektet bruger SSR/hydration.
-        this.isBrowser = isPlatformBrowser(platformId);
-    }
-
-    public initialize(): void {
         this.loadOrders();
 
-        // SignalR skal kun startes i browseren.
-        // Under SSR findes der ikke en rigtig browserklient, som skal modtage live updates.
-        if (!this.isBrowser) {
-            return;
+        // PLATFORM_ID fortæller om koden kører i browseren eller på serveren (SSR).
+        // SignalR skal kun startes i browseren.. der er ingen rigtig klient at sende live-updates til under SSR.
+        if (isPlatformBrowser(platformId)) {
+            this.registerSignalRSubscriptions();
+            this.signalRService.startConnection();
         }
-
-        this.startLiveUpdates();
     }
 
     private loadOrders(): void {
-        // Undgår at både medarbejderdisplay og kundedisplay henter samme ordredata flere gange.
-        if (this.hasLoadedOrders) {
-            return;
-        }
-
-        this.hasLoadedOrders = true;
-
-        // Henter det nuværende ordre-overblik fra API'et.
-        this.orderService.getAllOrders().subscribe(orders => {
-            this.ordersSubject.next(orders ?? []);
+        this.orderService.getAllOrders().subscribe({
+            // next er den callback der håndterer det succesfulde svar fra backend. Lidt ligesom promise .then() i JavaScript.
+            next: orders => {
+                // ?? [] sikrer at vi aldrig sætter null som værdi for _orders,
+                // dvs. hvis backend returnerer null, bliver det til en tom liste i UI'et i stedet for fejl.
+                this._orders.set(orders ?? []);
+            },
+            error: err => {
+                console.error('Failed to load orders:', err);
+            }
         });
     }
 
-    private startLiveUpdates(): void {
-        // Undgår at flere komponenter opretter flere SignalR subscriptions og forbindelser.
-        if (this.hasStartedLiveUpdates) {
-            return;
-        }
-
-        this.hasStartedLiveUpdates = true;
-        this.registerSignalRSubscriptions();
-        this.signalRService.startConnection();
-    }
-
     private registerSignalRSubscriptions(): void {
-        // Lytter efter nye ordrer fra SignalRService.
-        this.signalRSub.add(
-            this.signalRService.newOrder$.subscribe(newOrder => {
-                console.log('OrderDisplayStateService received new order:', newOrder);
+        // Når SignalR pusher en ny ordre, tilføjes den til state-listen (_orders)
+        this.signalRService.newOrder$.subscribe(newOrder => {
+            this.addOrderToList(newOrder);
+        });
 
-                // SignalR-callbacks kan komme udenfor Angulars change detection.
-                // NgZone.run flytter state-opdateringen ind i Angular igen, så UI'et kan opdatere uden detectChanges().
-                this.ngZone.run(() => {
-                    this.addOrderToList(newOrder);
-                });
-            })
-        );
-
-        // Lytter efter statusopdateringer fra SignalRService.
-        this.signalRSub.add(
-            this.signalRService.updatedOrder$.subscribe(updatedOrder => {
-                console.log('OrderDisplayStateService received updated order:', updatedOrder);
-
-                // NgZone bruges her af samme grund som ved nye ordrer.
-                // Når state ændres inde i Angulars zone, kan async pipe opdatere template automatisk.
-                this.ngZone.run(() => {
-                    this.updateOrderStatusInList(updatedOrder);
-                });
-            })
-        );
+        // Når SignalR pusher en statusopdatering, opdateres den tilsvarende ordre i state-listen (_orders).
+        this.signalRService.updatedOrder$.subscribe(updatedOrder => {
+            this.updateOrderStatusInList(updatedOrder);
+        });
     }
 
     private addOrderToList(newOrder: Order): void {
-        const currentOrders = this.ordersSubject.value;
+        // Laver currenOrders på grund af mutation. Må hellst ikke ændre det eksisterende array direkte, fordi Angular ikke kan opdage det (referencen ændres ikke).
+        const currentOrders = this._orders();
 
-        // TransactionId bruges som unik nøgle, fordi OrderId'et potentielt kan gentage sig.
+        // TransactionId bruges som unik nøgle, fordi OrderId potentielt kan gentage sig.
         const orderAlreadyExists = currentOrders.some(order =>
             order.transactionId === newOrder.transactionId
         );
@@ -114,41 +77,32 @@ export class OrderDisplayStateService {
             return;
         }
 
-        // Opretter et nyt array, så Angular tydeligt kan se, at listen er ændret.
-        this.ordersSubject.next([...currentOrders, newOrder]);
+        // '...currentOrders' laver et nyt array med alle eksisterende ordrer + den nye ordre til sidst.
+        // Signals sammenligner referencer, så mutation af det eksisterende array bliver ikke opdaget.
+        // bruges sådan at Angular ved at der er sket en ændring og opdaterer UI'et.
+        this._orders.set([...currentOrders, newOrder]);
     }
 
     private updateOrderStatusInList(updatedOrder: Order): void {
-        const currentOrders = this.ordersSubject.value;
-
-        // SignalR-opdateringen indeholder kun delvis ordredata.
-        // Derfor opdateres kun status, så vi ikke overskriver fx items eller creationTime.
-        const updatedOrders = currentOrders.map(order => {
+        // Opdatere kun status.
+        const updatedOrders = this._orders().map(order => {
             if (order.transactionId !== updatedOrder.transactionId) {
                 return order;
             }
 
             return {
-                ...order,
+                ...order, // '...order' betyder at vi laver en kopi af den eksisterende ordre og sætter den nye status værdi.
                 status: updatedOrder.status
             };
         });
 
-        this.ordersSubject.next(updatedOrders);
-    }
-
-    private hasStatus(order: Order, status: string): boolean {
-        // Forventer at backend sender enum-værdier som tekst, fx "UnderPreparation".
-        return String(order.status) === status;
+        this._orders.set(updatedOrders);
     }
 
     public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): void {
         this.orderService.updateOrderStatus(transactionId, newStatus).subscribe({
             next: updatedOrder => {
-                this.ngZone.run(() => {
-                    this.updateOrderStatusInList(updatedOrder);
-                });
-
+                this.updateOrderStatusInList(updatedOrder);
                 console.log(`Order ${transactionId} status updated to ${newStatus.status}`);
             },
             error: err => {

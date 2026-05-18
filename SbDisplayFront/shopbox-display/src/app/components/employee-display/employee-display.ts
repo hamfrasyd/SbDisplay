@@ -1,33 +1,26 @@
-import { Component, OnInit } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
+import { OrderStatus } from '../../generated/orders';
 
 @Component({
   selector: 'app-employee-display',
-  imports: [ReactiveFormsModule, MatCardModule, AsyncPipe],
+  imports: [MatCardModule],
   templateUrl: './employee-display.html',
   styleUrl: './employee-display.css',
 })
-export class EmployeeDisplay implements OnInit {
+export class EmployeeDisplay {
   constructor(public orderDisplayState: OrderDisplayStateService) { }
 
-  ngOnInit(): void {
-    // Initialiserer fælles ordre-state og live updates.
-    // Selve SignalR- og liste-logikken ligger i OrderDisplayStateService, så den ikke gentages i flere komponenter.
-    this.orderDisplayState.initialize();
-  }
-
   public markAsReadyForPickup(transactionId: number): void {
-    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'ReadyForPickup' });
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: OrderStatus.ReadyForPickup });
   }
 
   public markAsUnderPreparation(transactionId: number): void {
-    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'UnderPreparation' });
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: OrderStatus.UnderPreparation });
   }
 
   public markAsCompleted(transactionId: number): void {
-    this.orderDisplayState.updateOrderStatus(transactionId, { status: 'Completed' });
+    this.orderDisplayState.updateOrderStatus(transactionId, { status: OrderStatus.Completed });
   }
 }

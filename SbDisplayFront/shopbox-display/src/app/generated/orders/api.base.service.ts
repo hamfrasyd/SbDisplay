@@ -11,9 +11,10 @@ import { HttpHeaders, HttpParams, HttpParameterCodec } from '@angular/common/htt
 import { CustomHttpParameterCodec } from './encoder';
 import { Configuration } from './configuration';
 import { OpenApiHttpParams, QueryParamStyle, concatHttpParamsObject} from './query.params';
+import { environment } from '../../../environments/environment.development';
 
 export class BaseService {
-    protected basePath = 'http://localhost:5180';
+    protected basePath = `${environment.apiUrl}`;
     public defaultHeaders = new HttpHeaders();
     public configuration: Configuration;
     public encoder: HttpParameterCodec;
