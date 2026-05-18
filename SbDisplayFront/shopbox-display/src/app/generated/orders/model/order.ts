@@ -14,7 +14,7 @@ import { OrderStatus } from './orderStatus';
 export interface Order { 
     id?: number;
     transactionId?: number;
-    creationTime?: number;
+    creationTime?: string;
     items?: Array<Item> | null;
     status?: OrderStatus;
 }

@@ -30,7 +30,7 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.Id;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
-            command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
+            command.Parameters.Add("@CreationTime", SqlDbType.DateTimeOffset).Value = newOrder.CreationTime;
 
             connection.Open();
 
@@ -44,7 +44,8 @@ namespace SbDisplayLib.Repositories
                 Id = reader.GetInt32(reader.GetOrdinal("OrderId")),
                 TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
                 Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
-                CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
+                //CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
+                CreationTime = reader.GetDateTimeOffset(reader.GetOrdinal("CreationTime"))
             };
         }
 
@@ -69,7 +70,8 @@ namespace SbDisplayLib.Repositories
                     Id = reader.GetInt32(0),
                     TransactionId = reader.GetInt32(1),
                     Status = (OrderStatus)reader.GetInt32(2),
-                    CreationTime = reader.GetInt64(3)
+                    //CreationTime = reader.GetInt64(3)
+                    CreationTime = reader.GetDateTimeOffset(3)
 
                 };
                 orderList.Add(order);

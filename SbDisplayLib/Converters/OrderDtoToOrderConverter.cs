@@ -21,7 +21,8 @@ namespace SbDisplayLib.Converters
             { 
                 Id = data.order_id,
                 TransactionId = data.uid,
-                CreationTime = data.creation_time,
+                //CreationTime = data.creation_time,
+                CreationTime = DateTimeOffset.FromUnixTimeSeconds(data.creation_time)
             };
 
             return order;

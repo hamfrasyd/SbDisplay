@@ -3,7 +3,7 @@ using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Handlers
 {
-    public class CreateOrderHandler
+    public class CreateOrderHandler ///unused
     {
         private IOrderRepository _orderRepository;
 
