@@ -11,11 +11,13 @@ namespace SbDisplayLib.Handlers
     {
         private readonly IOrderApiClient _orderApiClient;
         private readonly IOrderRepository _orderRepository;
+        private readonly IItemRepository _itemRepository;
 
-        public NewOrderHandler(IOrderApiClient orderApiClient, IOrderRepository orderRepository) 
+        public NewOrderHandler(IOrderApiClient orderApiClient, IOrderRepository orderRepository, IItemRepository itemRepository) 
         { 
             _orderApiClient = orderApiClient;
             _orderRepository = orderRepository;
+            _itemRepository = itemRepository;
         }
 
         /// <summary>
@@ -25,13 +27,24 @@ namespace SbDisplayLib.Handlers
         /// </summary>
         /// <param name="transactionId">The unique identifier for the transaction associated with the new order, used to fetch order details from the ShopBox API.</param>
         /// <returns>An Order object representing the newly created order in the database, populated with data retrieved from the ShopBox API.</returns>
-        public async Task<Order> ProcessNewOrder(int transactionId) 
+        public async Task<Order> Execute(int transactionId) 
         {
             // Henter ordredata fra ShopBox Api via transactionId
-            var order = await _orderApiClient.GetOrderAsync(transactionId);
+            Order order = await _orderApiClient.GetOrderAsync(transactionId);
+
 
             // Oprettet ny Order i vores database ud fra det hentede data
             _orderRepository.Create(order);
+
+            // Opretter nye Items i databasen
+            if (order.Items != null)
+            {
+                foreach (OrderItem orderItem in order.Items)
+                {
+                    _itemRepository.Create(orderItem.Item);
+                    _orderRepository.CreateItemOrderRelation(order, orderItem);
+                }
+            }
 
             return order;
         }

@@ -39,7 +39,7 @@ namespace SbDisplay.Tests.SbDisplayLib.Handlers
             NewOrderHandler handler = new(_orderApiClientMock.Object, _orderRepositoryMock.Object);
 
             // Act
-            Order result = await handler.ProcessNewOrder(transactionId);
+            Order result = await handler.Execute(transactionId);
 
             // Assert
             result.TransactionId.Should().Be(transactionId);
