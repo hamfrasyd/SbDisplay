@@ -1,27 +1,69 @@
 <div class="display">
+
+  <!-- ═══════════════════════════ LEFT — Tilbereder ═══════════════════════════ -->
   <div class="column left">
     <h2>Tilbereder</h2>
 
-    <div class="queue">
-      @for (order of orderDisplayState.preparingOrders(); track order.transactionId) {
-      <div class="queue-item">
-        {{ order.id }}
-      </div>
+    <!--
+      #leftGrid is the ViewChild reference used in .ts to measure available height.
+      The grid is flex-grow so it fills all remaining space after the heading.
+    -->
+    <div class="queue" #leftGrid>
+      @for (order of leftVisible(); track order.transactionId) {
+        <div class="queue-item">
+          {{ order.id }}
+        </div>
       }
     </div>
+
+    <!--
+      Overflow ticker — only rendered when there are more orders than fit in the grid.
+      The inner .ticker-track contains the items twice so the CSS animation can loop
+      seamlessly: when the first copy scrolls off the left edge, the second copy is
+      already in position, creating a continuous loop without a visual jump.
+    -->
+    @if (hasLeftOverflow()) {
+      <div class="ticker-wrapper" aria-label="Flere ordrer under tilberedning">
+        <div class="ticker-track left-ticker">
+          <!-- First copy -->
+          @for (order of leftOverflow(); track 'a-' + order.transactionId) {
+            <span class="ticker-item">{{ order.id }}</span>
+          }
+          <!-- Second copy for seamless looping -->
+          @for (order of leftOverflow(); track 'b-' + order.transactionId) {
+            <span class="ticker-item">{{ order.id }}</span>
+          }
+        </div>
+      </div>
+    }
   </div>
 
   <div class="divider"></div>
 
+  <!-- ═══════════════════════════ RIGHT — Afhent ═══════════════════════════ -->
   <div class="column right">
     <h2>Afhent</h2>
 
-    <div class="queue">
-      @for (order of orderDisplayState.readyForPickupOrders(); track order.transactionId) {
-      <div class="current">
-        {{ order.id }}
-      </div>
+    <div class="queue" #rightGrid>
+      @for (order of rightVisible(); track order.transactionId) {
+        <div class="current">
+          {{ order.id }}
+        </div>
       }
     </div>
+
+    @if (hasRightOverflow()) {
+      <div class="ticker-wrapper" aria-label="Flere ordrer klar til afhentning">
+        <div class="ticker-track right-ticker">
+          @for (order of rightOverflow(); track 'a-' + order.transactionId) {
+            <span class="ticker-item ready">{{ order.id }}</span>
+          }
+          @for (order of rightOverflow(); track 'b-' + order.transactionId) {
+            <span class="ticker-item ready">{{ order.id }}</span>
+          }
+        </div>
+      </div>
+    }
   </div>
+
 </div>
