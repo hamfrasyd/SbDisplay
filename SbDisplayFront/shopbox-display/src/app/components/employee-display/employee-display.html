@@ -1,62 +1,101 @@
-<div class="container mt-4">
-  <div class="row g-4">
-    @for (order of orderDisplayState.orders(); track order.transactionId) {
-    <div class="col-12 col-md-6 col-lg-4">
-      <mat-card class="h-100 shadow-sm">
-        <mat-card-header class="bg-blue">
-          <mat-card-title>
-            OrderNumber {{ order.id ?? 'N/A'}}
-          </mat-card-title>
+<div class="container-fluid py-4">
 
-          <mat-card-subtitle>
-            Transaction: {{ order.transactionId ?? 'N/A' }}
-          </mat-card-subtitle>
-        </mat-card-header>
+  <!-- Page error message -->
+  @if (pageError(); as error) {
+  <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center" role="alert">
+    <span>{{ error }}</span>
+    <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+  </div>
+  }
 
-        <mat-card-content class="mt-3">
-          <p class="mb-2">
-            <strong>Status:</strong> {{ order.status }}
-          </p>
+  <!-- Tab navigation -->
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
+        (click)="setActiveTab(employeeTab.Received)">
+        Modtaget
+        <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
+        (click)="setActiveTab(employeeTab.Completed)">
+        Færdig
+        <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
+      </button>
+    </li>
+  </ul>
 
-          <p class="mb-2">
-            <strong>Items:</strong>
-          </p>
+  <!-- Currently displayed orders grid -->
+  <div class="row g-3">
+    @for (order of currentlyDisplayedOrders(); track order.transactionId) {
+    <div class="col-12 col-md-6 col-lg-4 col-xl-3">
 
+      <!-- Order card -->
+      <div class="card h-100 order-card" [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
+        [class.order-card-completed]="order.status === orderStatus.Completed">
+
+        <!-- Order card header -->
+        <div class="card-header d-flex justify-content-between align-items-center" (click)="onCardClick(order)">
+          <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
+          <small class="text-muted">Tx: {{ order.transactionId ?? 'N/A' }}</small>
+
+          @if (order.status === orderStatus.ReadyForPickup || order.status === orderStatus.Completed) {
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-warning btn-sm w-25"
+              (click)="onChangeStatus(order, orderStatus.UnderPreparation)">
+              Stadig under forberedning
+            </button>
+          </div>
+          }
+
+          @if (order.status === orderStatus.Completed) {
+          <button type="button" class="btn btn-outline-success btn-sm w-25"
+            (click)="onChangeStatus(order, orderStatus.ReadyForPickup)">
+            Tilbage til klar
+          </button>
+          }
+        </div>
+
+        <!-- Order card body -->
+        <div class="card-body order-card-body" (click)="onCardClick(order)">
           @if (order.items?.length) {
-          <ul class="list-group list-group-flush mb-3">
+          <ul class="list-group list-group-flush">
             @for (item of order.items; track item.id) {
-            <li class="list-group-item px-0">
-              <strong>#{{ item.id }}</strong>
+            <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+              <span class="badge bg-secondary me-2">#{{ item.id }}</span>
               {{ item.name }}
             </li>
             }
           </ul>
           } @else {
-          <p class="text-muted mb-3">
-            No items
-          </p>
+          <p class="text-muted mb-0">Ingen varer</p>
           }
-        </mat-card-content>
+        </div>
 
-        <mat-card-footer class="bg-light p-3 mt-auto">
-          <p class="mb-0">
-            <strong>Created:</strong> {{ order.creationTime }}
-          </p>
-          <button mat-raised-button color="primary" class="mt-2" (click)="markAsReadyForPickup(order.transactionId!)">
-            Mark as Ready for Pickup
-          </button>
+        <!-- Order card footer -->
+        <div class="card-footer">
+          <small class="text-muted d-block mb-2" (click)="onCardClick(order)">
+            Oprettet: {{ order.creationTime }}
+          </small>
 
-          <button mat-raised-button color="accent" class="mt-2 ms-2" (click)="markAsCompleted(order.transactionId!)">
-            Mark as Completed
-          </button>
+          @if (cardErrors().get(order.transactionId!); as cardError) {
+          <div class="alert alert-danger mt-2 mb-0 py-2 small">
+            {{ cardError }}
+          </div>
+          }
+        </div>
 
-          <button mat-raised-button color="warn" class="mt-2 ms-2"
-            (click)="markAsUnderPreparation(order.transactionId!)">
-            Mark as Under Preparation
-          </button>
-        </mat-card-footer>
-      </mat-card>
+      </div>
+    </div>
+    }
+
+    <!-- Empty state if no orders -->
+    @if (currentlyDisplayedOrders().length === 0) {
+    <div class="col-12">
+      <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
     </div>
     }
   </div>
+
 </div>
