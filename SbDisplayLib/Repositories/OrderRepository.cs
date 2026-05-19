@@ -48,7 +48,7 @@ namespace SbDisplayLib.Repositories
                 Id = reader.GetInt32(orderIdOrdinal),
                 TransactionId = reader.GetInt32(transactionOrdinal),
                 Status = (OrderStatus)reader.GetInt32(statusOrdinal),
-                CreationTime = reader.GetDateTimeOffset(reader.GetOrdinal(creationOrdinal)
+                CreationTime = reader.GetDateTimeOffset(creationOrdinal)
             };
         }
 
@@ -156,7 +156,7 @@ namespace SbDisplayLib.Repositories
                     Id = reader.GetInt32(orderIdOrdinal),
                     TransactionId = reader.GetInt32(transactionOrdinal),
                     Status = (OrderStatus)reader.GetInt32(statusOrdinal),
-                    CreationTime = reader.GetInt64(creationOrdinal)
+                    CreationTime = reader.GetDateTimeOffset(creationOrdinal)
                 };
             }
             return null;
