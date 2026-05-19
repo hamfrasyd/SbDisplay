@@ -30,7 +30,7 @@ namespace SbDisplayApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] TransactionDto value)
         {
-            Order order = await _newOrderHandler.ProcessNewOrder(value.id);
+            Order order = await _newOrderHandler.Execute(value.id);
 
             // Sender den nye ordre ud til alle åbne frontend-klienter.
             // Angular lytter på "ReceiveNewOrderNotification" og tilføjer ordren til listen.

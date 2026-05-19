@@ -16,7 +16,7 @@ namespace SbDisplayLib.Models
 
         //Nullable for nu skal ændres når items bliver introduceret
         /// <summary>The list of items in an order.</summary>
-        public List<Item>? Items { get; set; }
+        public List<OrderItem>? Items { get; set; }
 
         /// <summary>The status of an order.</summary>
         public OrderStatus Status { get; set; }
