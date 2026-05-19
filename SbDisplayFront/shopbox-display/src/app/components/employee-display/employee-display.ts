@@ -2,10 +2,11 @@ import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { OrderStatus } from '../../generated/orders';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-employee-display',
-  imports: [MatCardModule],
+  imports: [MatCardModule, DatePipe],
   templateUrl: './employee-display.html',
   styleUrl: './employee-display.css',
 })
