@@ -18,9 +18,9 @@ namespace SbDisplayLib.Repositories
         public Order Create(Order newOrder)
         {
             const string sql = """
-            INSERT INTO [dbo].[Orders] (TransactionId, OrderId, StatusId, CreationTime)
-            OUTPUT INSERTED.TransactionId, INSERTED.OrderId, INSERTED.StatusId, INSERTED.CreationTime
-            VALUES (@TransactionId, @OrderId, @StatusId, @CreationTime)
+            INSERT INTO [dbo].[Orders] (TransactionId, OrderId, StatusId, CreationTimeUnix, CreationTime)
+            OUTPUT INSERTED.TransactionId, INSERTED.OrderId, INSERTED.StatusId, INSERTED.CreationTimeUnix, INSERTED.CreationTime
+            VALUES (@TransactionId, @OrderId, @StatusId, @CreationTimeUnix ,@CreationTime)
             """;
 
             using var connection = new SqlConnection(_connectionString);
@@ -29,6 +29,7 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.Id;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
+            command.Parameters.Add("@CreationTimeUnix", SqlDbType.BigInt).Value = newOrder.CreationTimeUnix;
             command.Parameters.Add("@CreationTime", SqlDbType.DateTimeOffset).Value = newOrder.CreationTime;
 
             connection.Open();
@@ -41,6 +42,7 @@ namespace SbDisplayLib.Repositories
             int orderIdOrdinal = reader.GetOrdinal("OrderId");
             int transactionOrdinal = reader.GetOrdinal("TransactionId");
             int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationUnixOrdinal = reader.GetOrdinal("CreationTimeUnix");
             int creationOrdinal = reader.GetOrdinal("CreationTime");
 
             return new Order
@@ -48,6 +50,7 @@ namespace SbDisplayLib.Repositories
                 Id = reader.GetInt32(orderIdOrdinal),
                 TransactionId = reader.GetInt32(transactionOrdinal),
                 Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                CreationTimeUnix = reader.GetInt64(creationUnixOrdinal),
                 CreationTime = reader.GetDateTimeOffset(creationOrdinal)
             };
         }

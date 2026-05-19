@@ -14,6 +14,9 @@ namespace SbDisplayLib.Models
         /// <summary>Creation time of an order</summary>
         public DateTimeOffset CreationTime { get; set; }
 
+        /// <summary>The unix timestamp of the Creation time</summary>
+        public long? CreationTimeUnix { get; set; }
+
         //Nullable for nu skal ændres når items bliver introduceret
         /// <summary>The list of items in an order.</summary>
         public List<OrderItem>? Items { get; set; }
