@@ -17,6 +17,7 @@ namespace SbDisplayApi
             // Add services to the container.
             builder.Services.AddScoped<NewOrderHandler>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<IItemRepository, ItemRepository>();
 
             builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
             {

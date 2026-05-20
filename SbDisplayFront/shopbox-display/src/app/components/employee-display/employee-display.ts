@@ -72,7 +72,7 @@ export class EmployeeDisplay {
 
         this.orderDisplayState.updateOrderStatus(transactionId, { status: newStatus }).subscribe({
             next: () => this.clearCardError(transactionId),
-            error: () => this.setCardError(transactionId, 'Kunne ikke opdatere status. Prøv igen.')
+            error: () => this.setCardError(transactionId, 'Kunne ikke opdatere status. Pr�v igen.')
         });
     }
 

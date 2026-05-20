@@ -12,11 +12,14 @@ namespace SbDisplayLib.Models
         public int TransactionId { get; set; }
 
         /// <summary>Creation time of an order</summary>
-        public long CreationTime { get; set; }
+        public DateTimeOffset CreationTime { get; set; }
+
+        /// <summary>The unix timestamp of the Creation time</summary>
+        public long? CreationTimeUnix { get; set; }
 
         //Nullable for nu skal ændres når items bliver introduceret
         /// <summary>The list of items in an order.</summary>
-        public List<Item>? Items { get; set; }
+        public List<OrderItem>? Items { get; set; }
 
         /// <summary>The status of an order.</summary>
         public OrderStatus Status { get; set; }

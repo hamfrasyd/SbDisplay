@@ -4,7 +4,6 @@ using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 using Microsoft.Extensions.Configuration;
 using System.Data;
-
 namespace SbDisplayLib.Repositories
 {
     public class OrderRepository : IOrderRepository
@@ -19,18 +18,19 @@ namespace SbDisplayLib.Repositories
         public Order Create(Order newOrder)
         {
             const string sql = """
-            INSERT INTO [dbo].[TestOrders] (OrderId, StatusId, TransactionId, CreationTime)
-            OUTPUT INSERTED.OrderId, INSERTED.StatusId, INSERTED.TransactionId, INSERTED.CreationTime
-            VALUES (@OrderId, @StatusId, @TransactionId, @CreationTime)
+            INSERT INTO [dbo].[Orders] (TransactionId, OrderId, StatusId, CreationTimeUnix, CreationTime)
+            OUTPUT INSERTED.TransactionId, INSERTED.OrderId, INSERTED.StatusId, INSERTED.CreationTimeUnix, INSERTED.CreationTime
+            VALUES (@TransactionId, @OrderId, @StatusId, @CreationTimeUnix ,@CreationTime)
             """;
 
             using var connection = new SqlConnection(_connectionString);
             using var command = new SqlCommand(sql, connection);
 
+            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
             command.Parameters.Add("@OrderId", SqlDbType.Int).Value = newOrder.Id;
             command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)newOrder.Status;
-            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = newOrder.TransactionId;
-            command.Parameters.Add("@CreationTime", SqlDbType.BigInt).Value = newOrder.CreationTime;
+            command.Parameters.Add("@CreationTimeUnix", SqlDbType.BigInt).Value = newOrder.CreationTimeUnix;
+            command.Parameters.Add("@CreationTime", SqlDbType.DateTimeOffset).Value = newOrder.CreationTime;
 
             connection.Open();
 
@@ -39,12 +39,52 @@ namespace SbDisplayLib.Repositories
             if (!reader.Read())
                 throw new InvalidOperationException("Insert did not return the created order.");
 
+            int orderIdOrdinal = reader.GetOrdinal("OrderId");
+            int transactionOrdinal = reader.GetOrdinal("TransactionId");
+            int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationUnixOrdinal = reader.GetOrdinal("CreationTimeUnix");
+            int creationOrdinal = reader.GetOrdinal("CreationTime");
+
             return new Order
             {
-                Id = reader.GetInt32(reader.GetOrdinal("OrderId")),
-                TransactionId = reader.GetInt32(reader.GetOrdinal("TransactionId")),
-                Status = (OrderStatus)reader.GetInt32(reader.GetOrdinal("StatusId")),
-                CreationTime = reader.GetInt64(reader.GetOrdinal("CreationTime"))
+                Id = reader.GetInt32(orderIdOrdinal),
+                TransactionId = reader.GetInt32(transactionOrdinal),
+                Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                CreationTimeUnix = reader.GetInt64(creationUnixOrdinal),
+                CreationTime = reader.GetDateTimeOffset(creationOrdinal)
+            };
+        }
+
+        public OrderItem CreateItemOrderRelation(Order order, OrderItem orderItem)
+        {
+            const string sql = """
+            INSERT INTO [dbo].[OrdersItems] (OrderTransactionId, ItemId, Quantity)
+            OUTPUT INSERTED.OrderTransactionId, INSERTED.ItemId, INSERTED.Quantity
+            VALUES (@OrderTransactionId, @ItemId, @Quantity)
+            """;
+
+            using var connection = new SqlConnection(_connectionString);
+            using var command = new SqlCommand(sql, connection);
+
+            command.Parameters.Add("@OrderTransactionId", SqlDbType.Int).Value = order.TransactionId;
+            command.Parameters.Add("@ItemId", SqlDbType.Int).Value = orderItem.Item.Id;
+            command.Parameters.Add("@Quantity", SqlDbType.Int).Value = orderItem.Quantity;
+
+            connection.Open();
+
+            using var reader = command.ExecuteReader();
+
+            if (!reader.Read())
+                throw new InvalidOperationException("Insert could not create the relationship between order and item");
+
+            int orderTransactionIdOrdinal = reader.GetOrdinal("OrderTransactionId");
+            int itemOrdinal = reader.GetOrdinal("ItemId");
+            int quantityOrdinal = reader.GetOrdinal("Quantity");
+
+            return new OrderItem
+            {
+                Item = orderItem.Item,
+                Quantity = orderItem.Quantity
             };
         }
 
@@ -53,7 +93,7 @@ namespace SbDisplayLib.Repositories
             var orderList = new List<Order>();
 
             const string sql = """
-                SELECT OrderId, TransactionId, StatusId, CreationTime FROM [dbo].[TestOrders]
+                SELECT OrderId, TransactionId, StatusId, CreationTime FROM [dbo].[Orders]
                 """;
 
             using var connection = new SqlConnection(_connectionString);
@@ -61,40 +101,40 @@ namespace SbDisplayLib.Repositories
 
             connection.Open();
             using var reader = command.ExecuteReader();
-            
+
+            int orderIdOrdinal = reader.GetOrdinal("OrderId");
+            int transactionOrdinal = reader.GetOrdinal("TransactionId");
+            int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationOrdinal = reader.GetOrdinal("CreationTime");
+
             while (reader.Read())
             {
                 var order = new Order
                 {
-                    Id = reader.GetInt32(0),
-                    TransactionId = reader.GetInt32(1),
-                    Status = (OrderStatus)reader.GetInt32(2),
-                    CreationTime = 123123213213
-
+                    Id = reader.GetInt32(orderIdOrdinal),
+                    TransactionId = reader.GetInt32(transactionOrdinal),
+                    Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                    CreationTime = reader.GetDateTimeOffset(creationOrdinal)
                 };
                 orderList.Add(order);
             }
             return orderList;
         }
 
-        public Order GetById(int transcationId)
-        {
-            throw new NotImplementedException();
-        }
-
         public Order? UpdateOrderStatus(int transactionId, OrderStatus statusId)
         {
             //Vi skal validerer vores parameter input. (Handler?)
             //Vi skal lave et SQL script.			
-            const string updateQuery =
-                @"
-                UPDATE TestOrders
+            const string updateQuery ="""
+                UPDATE Orders
                 SET StatusId = @StatusId
-				OUTPUT         
-					INSERTED.TransactionId, 
-					INSERTED.StatusId,
-                    INSERTED.OrderId
-                WHERE TransactionId = @TransactionId";
+                OUTPUT
+                INSERTED.TransactionId,
+                INSERTED.StatusId,
+                INSERTED.OrderId,
+                INSERTED.CreationTime
+                WHERE TransactionId = @TransactionId
+                """;
 
 
             //Så vi skal åbne vores SQL connection.
@@ -106,18 +146,23 @@ namespace SbDisplayLib.Repositories
             command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = transactionId;
 
             using var reader = command.ExecuteReader();
+
+            int orderIdOrdinal = reader.GetOrdinal("OrderId");
+            int transactionOrdinal = reader.GetOrdinal("TransactionId");
+            int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationOrdinal = reader.GetOrdinal("CreationTime");
+
             if (reader.Read())
             {
                 return new Order
                 {
-                    TransactionId = (int)reader["TransactionId"],
-                    Id = (int)reader["OrderId"],
-                    Status = (OrderStatus)(int)reader["StatusId"]
-
+                    Id = reader.GetInt32(orderIdOrdinal),
+                    TransactionId = reader.GetInt32(transactionOrdinal),
+                    Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                    CreationTime = reader.GetDateTimeOffset(creationOrdinal)
                 };
             }
             return null;
-
         }
     }
 }
