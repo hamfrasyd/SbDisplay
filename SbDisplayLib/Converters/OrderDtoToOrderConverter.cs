@@ -21,8 +21,23 @@ namespace SbDisplayLib.Converters
             { 
                 Id = data.order_id,
                 TransactionId = data.uid,
-                CreationTime = data.creation_time,
+                CreationTime = DateTimeOffset.FromUnixTimeSeconds(data.creation_time),
+                CreationTimeUnix = data.creation_time,
+                Items = new List<OrderItem>()
             };
+
+            foreach (BasketItemDto basketItem in data.basket_items)
+            {
+                order.Items.Add(new OrderItem()
+                {
+                    Quantity = basketItem.single_item_quantity,
+                    Item = new Item()
+                    {
+                        Id = basketItem.uid,
+                        Name = basketItem.product_name
+                    }
+                });
+            }
 
             return order;
         }

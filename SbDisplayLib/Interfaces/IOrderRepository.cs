@@ -19,10 +19,13 @@ namespace SbDisplayLib.Interfaces
         /// <returns>The created order</returns>
         public Order Create(Order newOrder);
 
+        /// <summary>Creates the new relation between the Order and it's item</summary>
+        /// <param name="order">The order part of the relationship</param>
+        /// <param name="orderItem">The item part of the relationship</param>
+        public OrderItem CreateItemOrderRelation(Order order, OrderItem orderItem);
+
         /// <summary>Retrieves all orders from the database.</summary>
         /// <returns>A list of retrieved orders</returns>
         public List<Order> GetAll();
-
-        public Order GetById(int transcationId);
     }
 }
