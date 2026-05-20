@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { OrderDisplayStateService } from '../../services/order-display-state.service';
 
 @Component({
   selector: 'app-customer-display',
@@ -6,4 +7,6 @@ import { Component } from '@angular/core';
   templateUrl: './customer-display.html',
   styleUrl: './customer-display.css',
 })
-export class CustomerDisplay {}
+export class CustomerDisplay {
+  constructor(public orderDisplayState: OrderDisplayStateService) { }
+}

@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ── Reset & base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Full-screen page ── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 2rem;
+}
+
+/* ── Hero block ── */
+.hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  max-width: 680px;
+  width: 100%;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #3ab54a; /* Shopbox green */
+}
+
+.title {
+  font-size: clamp(1.9rem, 5.5vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #1a1a1a;
+}
+
+/* ── Button row ── */
+.buttons {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Base button ── */
+.nav-btn {
+  flex: 1 1 220px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  border: 1.5px solid #e8e8e8;
+  background-color: #ffffff;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.nav-btn:hover {
+  transform: translateY(-5px);
+  border-color: #3ab54a;
+  box-shadow:
+    0 12px 32px rgba(58, 181, 74, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Button text ── */
+.btn-icon {
+  font-size: 1.9rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.btn-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.btn-sub {
+  font-size: 0.8rem;
+  color: #888888;
+  font-weight: 400;
+}
+
+/* ── Responsive: phones ── */
+@media (max-width: 480px) {
+  .buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-btn {
+    max-width: 100%;
+    width: 100%;
+    padding: 1.6rem 1.25rem;
+  }
+}

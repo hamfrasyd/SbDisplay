@@ -1,1 +1,27 @@
-<p>customer-display works!</p>
+<div class="display">
+  <div class="column left">
+    <h2>Tilbereder</h2>
+
+    <div class="queue">
+      @for (order of orderDisplayState.preparingOrders(); track order.transactionId) {
+      <div class="queue-item">
+        {{ order.id }}
+      </div>
+      }
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="column right">
+    <h2>Afhent</h2>
+
+    <div class="queue">
+      @for (order of orderDisplayState.readyForPickupOrders(); track order.transactionId) {
+      <div class="current">
+        {{ order.id }}
+      </div>
+      }
+    </div>
+  </div>
+</div>
