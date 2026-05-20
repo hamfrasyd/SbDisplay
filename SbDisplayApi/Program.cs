@@ -68,10 +68,14 @@ namespace SbDisplayApi
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseRouting();
 
+        
             // Siger UseCors("ShopboxdisplayPolicy") efter UseAuthorization, så CORS-politikken virker efter at brugeren er autentificeret.
             app.UseCors("ShopboxdisplayPolicy");
+
+
+            app.UseAuthorization();
 
             // Mapper SignalR hub'en til en URL, som Angular kan forbinde til.
             // Denne route skal matche URL'en i signalr.service.ts.
