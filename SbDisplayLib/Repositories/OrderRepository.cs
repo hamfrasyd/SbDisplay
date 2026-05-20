@@ -69,7 +69,7 @@ namespace SbDisplayLib.Repositories
                     Id = reader.GetInt32(0),
                     TransactionId = reader.GetInt32(1),
                     Status = (OrderStatus)reader.GetInt32(2),
-                    CreationTime = reader.GetInt64(3)
+                    CreationTime = 123123213213
 
                 };
                 orderList.Add(order);

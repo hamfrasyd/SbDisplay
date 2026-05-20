@@ -29,7 +29,7 @@ export class EmployeeDisplay {
         return this.orderDisplayState.orders().filter(order => order.status === OrderStatus.Completed);
     });
 
-    public readonly visibleOrders = computed(() => {
+    public readonly currentlyDisplayedOrders = computed(() => {
         if (this.activeTab() === EmployeeTab.Received) {
             return this.receivedOrders();
         }
