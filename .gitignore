@@ -406,3 +406,8 @@ cypress/videos/
 # OS
 .DS_Store
 Thumbs.db
+
+# Keep Angular environment files tracked
+!src/environments/
+!src/environments/environment.ts
+!src/environments/environment.development.ts

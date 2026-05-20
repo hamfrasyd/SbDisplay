@@ -3,7 +3,7 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "51685e46-ddc0-4976-8776-b2af2ae8402d"
+    "analytics": "95a9eae3-7e1e-42ab-8b81-ac9cc4f14d7a"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -25,21 +25,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/material-theme.scss",
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
-              "src/styles.css"
-            ],
-<<<<<<< HEAD
-            "outputMode": "static",
-            "prerender": false,
-=======
-            "server": "src/main.server.ts",
-            "outputMode": "static",
->>>>>>> 2ce0bb70921bf356c3b2470b26730fab549b6de8
-            "security": {
-              "allowedHosts": []
-            },
+            "styles": ["node_modules/bootstrap/dist/css/bootstrap.min.css", "src/styles.css"],
             "polyfills": ["@angular/localize/init"]
           },
           "configurations": {
@@ -47,13 +33,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "800kB",
                   "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "10kB",
+                  "maximumError": "15kB"
                 }
               ],
               "outputHashing": "all"
@@ -61,7 +47,13 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
