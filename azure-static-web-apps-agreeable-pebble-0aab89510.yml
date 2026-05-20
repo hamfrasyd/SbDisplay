@@ -20,6 +20,18 @@ jobs:
   steps:
   - checkout: self
     submodules: true
+    
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      cd SbDisplayFront/shopbox-display
+      npm ci
+      npm run build
+    displayName: 'Build Angular app'
+
   - task: AzureStaticWebApp@0
     inputs:
       azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AGREEABLE_PEBBLE_0AAB89510)
