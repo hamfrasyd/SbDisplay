@@ -30,8 +30,13 @@
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "src/styles.css"
             ],
+<<<<<<< HEAD
             "outputMode": "static",
             "prerender": false,
+=======
+            "server": "src/main.server.ts",
+            "outputMode": "static",
+>>>>>>> 2ce0bb70921bf356c3b2470b26730fab549b6de8
             "security": {
               "allowedHosts": []
             },
