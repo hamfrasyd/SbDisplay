@@ -62,7 +62,7 @@
         <!-- Order card footer -->
         <div class="card-footer">
           <small class="text-muted d-block mb-2" (click)="onCardClick(order)">
-            Oprettet: {{ order.creationTime }}
+            Oprettet: {{ order.creationTime | date:'HH:mm' }}
           </small>
 
           @if (cardErrors().get(order.transactionId!); as cardError) {

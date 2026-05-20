@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { Order, OrderStatus } from '../../generated/orders';
+import { DatePipe } from '@angular/common';
 
 enum EmployeeTab {
   Received = 'Received',
@@ -9,7 +10,7 @@ enum EmployeeTab {
 
 @Component({
     selector: 'app-employee-display',
-    imports: [],
+    imports: [DatePipe],
     templateUrl: './employee-display.html',
     styleUrl: './employee-display.css',
 })
