@@ -3,7 +3,7 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "51685e46-ddc0-4976-8776-b2af2ae8402d"
+    "analytics": "95a9eae3-7e1e-42ab-8b81-ac9cc4f14d7a"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -25,19 +25,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/material-theme.scss",
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
-              "src/styles.css"
-            ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "security": {
-              "allowedHosts": []
-            },
-            "ssr": {
-              "entry": "src/server.ts"
-            },
+            "styles": ["node_modules/bootstrap/dist/css/bootstrap.min.css", "src/styles.css"],
             "polyfills": ["@angular/localize/init"]
           },
           "configurations": {
