@@ -1,5 +1,6 @@
 import { Inject, Injectable, PLATFORM_ID, computed, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Observable, tap } from 'rxjs';
 import { OrdersService, Order, UpdateOrderStatusRequest, OrderStatus } from '../generated/orders';
 import { SignalRService } from './signalr.service';
 
@@ -99,15 +100,11 @@ export class OrderDisplayStateService {
         this._orders.set(updatedOrders);
     }
 
-    public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): void {
-        this.orderService.updateOrderStatus(transactionId, newStatus).subscribe({
-            next: updatedOrder => {
+    public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): Observable<Order> {
+        return this.orderService.updateOrderStatus(transactionId, newStatus).pipe(
+            tap(updatedOrder => {
                 this.updateOrderStatusInList(updatedOrder);
-                console.log(`Order ${transactionId} status updated to ${newStatus.status}`);
-            },
-            error: err => {
-                console.error(`Failed to update order ${transactionId} status:`, err);
-            }
-        });
+            })
+        );
     }
 }
