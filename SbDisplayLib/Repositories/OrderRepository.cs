@@ -93,7 +93,7 @@ namespace SbDisplayLib.Repositories
             var orderList = new List<Order>();
 
             const string sql = """
-                SELECT OrderId, TransactionId, StatusId, CreationTime FROM [dbo].[Orders]
+                SELECT OrderId, TransactionId, StatusId, CreationTimeUnix, CreationTime FROM [dbo].[Orders]
                 """;
 
             using var connection = new SqlConnection(_connectionString);
@@ -105,6 +105,7 @@ namespace SbDisplayLib.Repositories
             int orderIdOrdinal = reader.GetOrdinal("OrderId");
             int transactionOrdinal = reader.GetOrdinal("TransactionId");
             int statusOrdinal = reader.GetOrdinal("StatusId");
+            int creationUnixOrdinal = reader.GetOrdinal("CreationTimeUnix");
             int creationOrdinal = reader.GetOrdinal("CreationTime");
 
             while (reader.Read())
@@ -114,6 +115,7 @@ namespace SbDisplayLib.Repositories
                     Id = reader.GetInt32(orderIdOrdinal),
                     TransactionId = reader.GetInt32(transactionOrdinal),
                     Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                    CreationTimeUnix = reader.GetInt64(creationUnixOrdinal),
                     CreationTime = reader.GetDateTimeOffset(creationOrdinal)
                 };
                 orderList.Add(order);

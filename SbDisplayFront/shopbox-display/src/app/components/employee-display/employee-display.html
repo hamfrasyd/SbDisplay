@@ -32,35 +32,38 @@
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
 
       <!-- Order card -->
-      <div class="card h-100 order-card" [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
-        [class.order-card-completed]="order.status === orderStatus.Completed">
+      <div class="card order-card d-flex flex-column"
+          [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
+          [class.order-card-completed]="order.status === orderStatus.Completed">
 
         <!-- Order card header -->
         <div class="card-header d-flex justify-content-between align-items-center" (click)="onCardClick(order)">
-          <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
+          <strong class="fs-5">Order: {{ order.id ?? 'N/A' }}</strong>
           <small class="text-muted">{{ order.status ?? 'N/A' }}</small>
 
 
         </div>
 
-        <!-- Order card body -->
-        <div class="card-body order-card-body" (click)="onCardClick(order)">
+        <div class="card-body order-card-body flex-grow-1" (click)="onCardClick(order)">
           @if (order.items?.length) {
-          <ul class="list-group list-group-flush">
-            @for (item of order.items; track item.id) {
-            <li class="list-group-item px-0 py-1 border-0 bg-transparent">
-              <span class="badge bg-secondary me-2">#{{ item.id }}</span>
-              {{ item.name }}
-            </li>
-            }
-          </ul>
+            <ul class="list-group list-group-flush">
+              @for (orderItem of order.items; track orderItem.item?.id) {
+                <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+                  <span class="badge bg-secondary me-2">
+                    {{ orderItem.quantity }}x
+                  </span>
+
+                  {{ orderItem.item?.name }}
+                </li>
+              }
+            </ul>
           } @else {
-          <p class="text-muted mb-0">Ingen varer</p>
+            <p class="text-muted mb-0">Ingen varer</p>
           }
         </div>
 
         <!-- Order card footer -->
-        <div class="card-footer">
+        <div class="card-footer mt-auto">
           <small class="text-muted d-block mb-2" (click)="onCardClick(order)">
             Oprettet: {{ order.creationTime }}
           </small>

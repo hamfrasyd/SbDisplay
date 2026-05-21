@@ -4,8 +4,10 @@ using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
 using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.EnumHelpers;
+using SbDisplayLib.Handlers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
+using SbDisplayLib.Repositories;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -16,15 +18,16 @@ namespace SbDisplayApi.Controllers
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
-
+        private GetAllOrdersHandler _getAllOrdersHandler;
         // Giver controlleren adgang til SignalR hub'en uden at være inde i selve Hub-klassen.
         // Bruges til at sende live updates til Angular, når en ordre ændrer status.
         private IHubContext<ShopboxHub> _shopboxHubContext;
 
-        public OrdersController(IOrderRepository orderRepository, IHubContext<ShopboxHub> shopboxHubContext)
+        public OrdersController(IOrderRepository orderRepository, IHubContext<ShopboxHub> shopboxHubContext, GetAllOrdersHandler getAllOrdersHandler)
         {
             _orderRepo = orderRepository;
             _shopboxHubContext = shopboxHubContext;
+            _getAllOrdersHandler = getAllOrdersHandler;
         }
 
         // GET: api/<OrdersController>
@@ -33,7 +36,7 @@ namespace SbDisplayApi.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Get()
         {
-            var orders = _orderRepo.GetAll();
+            var orders = _getAllOrdersHandler.Execute();
 
             if (orders == null || orders.Count == 0)
             {
