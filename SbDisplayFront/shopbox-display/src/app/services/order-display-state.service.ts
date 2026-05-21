@@ -56,7 +56,7 @@ export class OrderDisplayStateService {
     private registerSignalRSubscriptions(): void {
         // Når SignalR pusher en ny ordre, tilføjes den til state-listen (_orders)
         this.signalRService.newOrder$.subscribe(newOrder => {
-            this.addOrderToList(newOrder);
+            this.upsertOrder(newOrder);
         });
 
         // Når SignalR pusher en statusopdatering, opdateres den tilsvarende ordre i state-listen (_orders).
@@ -65,24 +65,25 @@ export class OrderDisplayStateService {
         });
     }
 
-    private addOrderToList(newOrder: Order): void {
-        // Laver currenOrders på grund af mutation. Må hellst ikke ændre det eksisterende array direkte, fordi Angular ikke kan opdage det (referencen ændres ikke).
+    private upsertOrder(incomingOrder: Order): void {
+    // Laver currenOrders på grund af mutation. Må hellst ikke ændre det eksisterende array direkte, fordi Angular ikke kan opdage det (referencen ændres ikke).
         const currentOrders = this._orders();
 
-        // TransactionId bruges som unik nøgle, fordi OrderId potentielt kan gentage sig.
-        const orderAlreadyExists = currentOrders.some(order =>
-            order.transactionId === newOrder.transactionId
-        );
+    // TransactionId bruges som unik nøgle, fordi OrderId potentielt kan gentage sig.
+    const existingIndex = currentOrders.findIndex(
+      order => order.transactionId === incomingOrder.transactionId
+    );
 
-        if (orderAlreadyExists) {
-            return;
-        }
-
-        // '...currentOrders' laver et nyt array med alle eksisterende ordrer + den nye ordre til sidst.
-        // Signals sammenligner referencer, så mutation af det eksisterende array bliver ikke opdaget.
-        // bruges sådan at Angular ved at der er sket en ændring og opdaterer UI'et.
-        this._orders.set([...currentOrders, newOrder]);
+    if (existingIndex === -1) {
+      // Order is genuinely new — append it
+      this._orders.set([...currentOrders, incomingOrder]);
+    } else {
+      const updatedOrders = currentOrders.map((order, index) =>
+        index === existingIndex ? { ...order, ...incomingOrder } : order
+      );
+      this._orders.set(updatedOrders);
     }
+  }
 
     private updateOrderStatusInList(updatedOrder: Order): void {
         // Opdatere kun status.

@@ -27,6 +27,9 @@ yarn-error.log
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/mcp.json
+!src/environments/
+!src/environments/environment.ts
+!src/environments/environment.development.ts
 .history/*
 
 # Miscellaneous
@@ -38,6 +41,7 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+
 
 # System files
 .DS_Store
