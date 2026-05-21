@@ -54,7 +54,7 @@ namespace SbDisplayApi
                 // Denne politik er meget åben og bruges ofte under udvikling eller til offentlige API'er, hvor bred adgang er ønsket.
                 options.AddPolicy("ShopboxdisplayPolicy", policy =>
                 {
-                    policy.WithOrigins("https://wonderful-rock-032e49f10.7.azurestaticapps.net", "https://localhost:4200", "http://localhost:4200")        // Tillader anmodninger fra disse domæner.
+                    policy.WithOrigins("https://kind-plant-05eaf2303.7.azurestaticapps.net", "https://localhost:4200", "http://localhost:4200")        // Tillader anmodninger fra disse domæner.
                           .AllowAnyHeader()      // Tillader alle HTTP-headere i anmodningen.
                           .AllowAnyMethod()     // Tillader alle HTTP-metoder (GET, POST, PUT, DELETE, etc.).
                           .AllowCredentials(); // Tillader brug af legitimationsoplysninger (cookies, autorisationstokens, etc.) i anmodninger. Dette er required for SignalR.
