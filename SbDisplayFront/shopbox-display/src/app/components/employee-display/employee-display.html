@@ -20,7 +20,7 @@
     <li class="nav-item">
       <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
         (click)="setActiveTab(employeeTab.Completed)">
-        F�rdig
+        Færdig
         <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
       </button>
     </li>
@@ -31,58 +31,71 @@
     @for (order of currentlyDisplayedOrders(); track order.transactionId) {
     <div class="col-12 col-md-6 col-lg-4 col-xl-3">
 
-      <!-- Order card -->
-      <div class="card h-100 order-card" [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
-        [class.order-card-completed]="order.status === orderStatus.Completed">
+      <!-- Swipe container wraps each card so the revert indicator can be revealed behind it -->
+      <div class="order-swipe-container h-100">
 
-        <!-- Order card header -->
-        <div class="card-header d-flex justify-content-between align-items-center" (click)="onCardClick(order)">
-          <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
-          <small class="text-muted">{{ order.status ?? 'N/A' }}</small>
-
-
+        <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
+        @if (isSwipeable(order)) {
+        <div class="order-swipe-indicator">
+          <span>← Tilbage til tilberedning</span>
         </div>
+        }
 
-        <!-- Order card body -->
-        <div class="card-body order-card-body" (click)="onCardClick(order)">
-          @if (order.items?.length) {
-          <ul class="list-group list-group-flush">
-            @for (item of order.items; track item.id) {
-            <li class="list-group-item px-0 py-1 border-0 bg-transparent">
-              <span class="badge bg-secondary me-2">#{{ item.id }}</span>
-              {{ item.name }}
-            </li>
-            }
-          </ul>
-          } @else {
-          <p class="text-muted mb-0">Ingen varer</p>
-          }
-        </div>
+        <!-- Order card -->
+        <div class="card h-100 order-card" [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
+          [class.order-card-completed]="order.status === orderStatus.Completed"
+          [class.order-card-swipeable]="isSwipeable(order)" [class.order-card-swiping]="isCurrentlySwiping(order)"
+          [style.transform]="getSwipeTransform(order)" (pointerdown)="onPointerDown($event, order)"
+          (pointermove)="onPointerMove($event, order)" (pointerup)="onPointerEnd($event, order)"
+          (pointercancel)="onPointerEnd($event, order)">
 
-        <!-- Order card footer -->
-        <div class="card-footer">
-          <small class="text-muted d-block mb-2" (click)="onCardClick(order)">
-            Oprettet: {{ order.creationTime | date:'HH:mm' }}
-          </small>
-
-          @if (cardErrors().get(order.transactionId!); as cardError) {
-          <div class="alert alert-danger mt-2 mb-0 py-2 small">
-            {{ cardError }}
+          <!-- Order card header -->
+          <div class="card-header d-flex justify-content-between align-items-center"
+            (dblclick)="onCardDoubleClick(order)">
+            <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
+            <small class="text-muted">{{ order.status ?? 'N/A' }}</small>
           </div>
-          }
-          <div class="d-flex justify-content-end gap-2">
-            @if (order.status === orderStatus.ReadyForPickup || order.status === orderStatus.Completed) {
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-warning btn"
-                (click)="onChangeStatus(order, orderStatus.UnderPreparation)">
-              </button>
+
+          <!-- Order card body -->
+          <div class="card-body order-card-body" (dblclick)="onCardDoubleClick(order)">
+            @if (order.items?.length) {
+            <ul class="list-group list-group-flush">
+              @for (item of order.items; track item.id) {
+              <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+                <span class="badge bg-secondary me-2">#{{ item.id }}</span>
+                {{ item.name }}
+              </li>
+              }
+            </ul>
+            } @else {
+            <p class="text-muted mb-0">Ingen varer</p>
+            }
+          </div>
+
+          <!-- Order card footer -->
+          <div class="card-footer">
+            <small class="text-muted d-block mb-2" (dblclick)="onCardDoubleClick(order)">
+              Oprettet: {{ order.creationTime | date:'HH:mm' }}
+            </small>
+
+            @if (cardErrors().get(order.transactionId!); as cardError) {
+            <div class="alert alert-danger mt-2 mb-0 py-2 small">
+              {{ cardError }}
             </div>
             }
 
+            <!-- Status change buttons (Completed tab only) -->
             @if (order.status === orderStatus.Completed) {
-            <button type="button" class="btn btn-outline-success btn"
-              (click)="onChangeStatus(order, orderStatus.ReadyForPickup)">
-            </button>
+            <div class="d-flex justify-content-between gap-2">
+              <button type="button" class="btn btn order-btn-prep"
+                (click)="onChangeStatus(order, orderStatus.UnderPreparation)">
+                Under tilberedning
+              </button>
+              <button type="button" class="btn btn order-btn-ready"
+                (click)="onChangeStatus(order, orderStatus.ReadyForPickup)">
+                Klar til afhentning
+              </button>
+            </div>
             }
           </div>
         </div>
