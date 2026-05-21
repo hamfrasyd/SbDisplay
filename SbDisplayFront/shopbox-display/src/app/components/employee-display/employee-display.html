@@ -44,7 +44,7 @@
               <!-- Order card -->
       <div class="card order-card d-flex flex-column"
           [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
-          [class.order-card-completed]="order.status === orderStatus.Completed">
+          [class.order-card-completed]="order.status === orderStatus.Completed"
           [class.order-card-swipeable]="isSwipeable(order)" [class.order-card-swiping]="isCurrentlySwiping(order)"
           [style.transform]="getSwipeTransform(order)" (pointerdown)="onPointerDown($event, order)"
           (pointermove)="onPointerMove($event, order)" (pointerup)="onPointerEnd($event, order)"
@@ -60,18 +60,23 @@
           <!-- Order card body -->
           <div class="card-body order-card-body" (dblclick)="onCardDoubleClick(order)">
             @if (order.items?.length) {
-            <ul class="list-group list-group-flush">
-              @for (item of order.items; track item.id) {
-              <li class="list-group-item px-0 py-1 border-0 bg-transparent">
-                <span class="badge bg-secondary me-2">#{{ item.id }}</span>
-                {{ item.name }}
-              </li>
-              }
-            </ul>
+              <ul class="list-group list-group-flush">
+                @for (orderItem of order.items; track orderItem.item?.id) {
+                  <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+                    <span class="badge bg-secondary me-2">
+                      {{ orderItem.quantity }}x
+                    </span>
+
+                    {{ orderItem.item?.name }}
+                  </li>
+                }
+              </ul>
             } @else {
-            <p class="text-muted mb-0">Ingen varer</p>
+              <p class="text-muted mb-0">Ingen varer</p>
             }
           </div>
+
+          
 
           <!-- Order card footer -->
           <div class="card-footer mt-auto">
