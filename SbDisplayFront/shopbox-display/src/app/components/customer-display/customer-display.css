@@ -1,5 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ═══════════════════════════════════════════════════════════════
+   1. RESET — prevent any scrolling at the document level
+   ═══════════════════════════════════════════════════════════════
+   overflow: hidden on both html and body ensures the page can
+   never be scrolled by the user, touch, or keyboard.
+   The display fills exactly the viewport and nothing escapes it. */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. ROOT LAYOUT
+   ═══════════════════════════════════════════════════════════════ */
 .display {
   display: flex;
   width: 100vw;
@@ -7,6 +24,7 @@
   background: #ffffff;
   font-family: 'Plus Jakarta Sans', sans-serif;
   box-sizing: border-box;
+  overflow: hidden; /* Belt-and-suspenders: container itself also hides overflow */
 }
 
 .column {
@@ -16,6 +34,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden; /* Each column clips its own content */
+  box-sizing: border-box;
 }
 
 .left h2,
@@ -29,8 +49,15 @@
   padding-bottom: 16px;
   border-bottom: 2px solid #e8e8e8;
   text-align: center;
+  flex-shrink: 0; /* Heading never shrinks — it always takes its natural height */
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   3. QUEUE GRID
+   ═══════════════════════════════════════════════════════════════
+   flex-grow: 1 makes the grid expand to fill all remaining column
+   height after the heading. overflow: hidden clips items that would
+   go below the visible area — they end up in the ticker instead. */
 .queue {
   display: flex;
   flex-wrap: wrap;
@@ -38,9 +65,12 @@
   align-items: flex-start;
   align-content: flex-start;
   justify-content: flex-start;
+  flex-grow: 1;     /* Fill remaining height */
+  overflow: hidden; /* Items beyond the visible area are clipped, not scrollable */
+  min-height: 0;    /* Required for flex-grow + overflow:hidden to work correctly in a flex child */
 }
 
-/* LEFT — 5 per row, smaller */
+/* ─── LEFT: 5 per row ─── */
 .left .queue-item {
   background: gray;
   color: #ffffff;
@@ -56,7 +86,7 @@
   border: 1.5px solid #e8e8e8;
 }
 
-/* RIGHT — 3 per row, larger */
+/* ─── RIGHT: 3 per row ─── */
 .right .current {
   background: #3ab54a;
   color: #ffffff;
@@ -72,9 +102,246 @@
   letter-spacing: 2px;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   4. OVERFLOW TICKER
+   ═══════════════════════════════════════════════════════════════
+   The ticker-wrapper is a fixed-height strip at the bottom of each
+   column. It clips its content horizontally (overflow: hidden).
+
+   Inside is a .ticker-track that contains the overflow order numbers
+   twice. A CSS animation slides the track leftward. When the first
+   copy scrolls fully off the left edge, the animation loops back to
+   the start — and because the second copy starts right after the
+   first, the loop is visually seamless.
+
+   Animation duration is set via a CSS custom property (--ticker-duration)
+   so we can adjust speed without touching multiple places.            */
+
+.ticker-wrapper {
+  flex-shrink: 0;          /* Never let the ticker shrink — it stays at the bottom */
+  margin-top: 16px;
+  height: 72px;
+  overflow: hidden;        /* Clips the track as it scrolls */
+  position: relative;
+  border-radius: 10px;
+  background: #f5f5f5;
+  border: 1.5px solid #e8e8e8;
+
+  /* Fade edges so items don't hard-cut */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 94%,
+    transparent 100%
+  );
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  width: max-content;
+
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+
+  animation: ticker-scroll var(--ticker-duration, 20s) linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  font-size: 36px;
+  font-weight: 800;
+  color: #555555;
+  white-space: nowrap;
+  padding: 0 12px;
+  border-right: 2px solid #ddd;
+  line-height: 1;
+}
+
+.ticker-item:last-child {
+  border-right: none;
+}
+
+/* Green color for the right column's ready-for-pickup ticker */
+.ticker-item.ready {
+  color: #3ab54a;
+}
+
+/*
+  Right-to-left entry keyframe.
+
+  translateX values are relative to the *element itself* (the track),
+  not the wrapper. So we can't use a simple percentage to position
+  the track's left edge at the wrapper's right edge.
+
+  Instead we use calc() to combine:
+    - 100vw  → pushes the track's left edge to the right edge of the viewport
+               (close enough to the wrapper edge since each column is ~50vw)
+    - -100%  → pulls it back by the track's own full width at the end,
+               landing it fully off-screen to the left
+
+  Start:  left edge of track = right edge of wrapper  (off-screen right)
+  End:    right edge of track = left edge of wrapper  (off-screen left)
+
+  The gap between start and end is: wrapperWidth + trackWidth.
+  At the default 18s this reads at a comfortable walking pace.
+*/
+@keyframes ticker-scroll {
+
+  /*
+    Start lige udenfor venstre kant
+    så første ordre kommer ind med det samme
+  */
+  from {
+    transform: translateX(-100%);
+  }
+
+  /*
+    Kør helt ud til højre
+  */
+  to {
+    transform: translateX(45vw);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. DIVIDER
+   ═══════════════════════════════════════════════════════════════ */
 .divider {
   width: 2px;
   background: #e8e8e8;
   margin: 48px 0;
   flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. ASPECT RATIO MEDIA QUERIES
+   ═══════════════════════════════════════════════════════════════
+   CSS can query the viewport's aspect ratio directly.
+   We define four bands:
+
+   • Ultra-wide  (≥ 2.1:1)  — 21:9 monitors, very wide TVs
+   • Standard HD (≥ 1.6:1)  — 16:9 and 16:10 — the most common target
+   • Square-ish  (≥ 1.2:1)  — 4:3, older monitors
+   • Portrait    (< 1.2:1)  — tablets in portrait, rotated screens
+
+   We scale font sizes and padding proportionally so the display
+   always looks intentional rather than squeezed or oversized.      */
+
+/* ─── Ultra-wide: 21:9 and wider ─── */
+@media (min-aspect-ratio: 21/10) {
+  .column {
+    padding: 40px 56px;
+  }
+  .left h2, .right h2 {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+  /* Items can be a bit smaller since horizontal space is abundant */
+  .left .queue-item {
+    font-size: 40px;
+  }
+  .right .current {
+    font-size: 56px;
+  }
+  .ticker-wrapper {
+    height: 64px;
+  }
+  .ticker-item {
+    font-size: 30px;
+  }
+}
+
+/* ─── Standard 16:9 / 16:10 / 1920×1080 / 4K ─── */
+/* This is the primary target — no overrides needed, base styles apply */
+
+/* ─── Square-ish: 4:3, 5:4 ─── */
+@media (max-aspect-ratio: 4/3) {
+  .column {
+    padding: 32px;
+  }
+  .left h2, .right h2 {
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+  .left .queue-item {
+    font-size: 38px;
+    border-radius: 10px;
+  }
+  .right .current {
+    font-size: 52px;
+    border-radius: 10px;
+  }
+  .queue {
+    gap: 16px;
+  }
+  /* Recalculate widths for the smaller gap */
+  .left .queue-item {
+    width: calc((100% - 4 * 16px) / 5);
+  }
+  .right .current {
+    width: calc((100% - 2 * 16px) / 3);
+  }
+  .ticker-wrapper {
+    height: 60px;
+    margin-top: 12px;
+  }
+  .ticker-item {
+    font-size: 28px;
+  }
+}
+
+/* ─── Portrait / near-square (tablet rotated, etc.) ─── */
+@media (max-aspect-ratio: 1/1) {
+  /* Stack columns vertically instead of side by side */
+  .display {
+    flex-direction: column;
+  }
+  .divider {
+    width: 100%;
+    height: 2px;
+    margin: 0 48px;
+  }
+  .column {
+    height: auto;
+    flex: 1;
+    padding: 24px 32px;
+  }
+  .left h2, .right h2 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .left .queue-item {
+    font-size: 32px;
+    width: calc((100% - 4 * 12px) / 5);
+    border-radius: 8px;
+  }
+  .right .current {
+    font-size: 44px;
+    width: calc((100% - 2 * 12px) / 3);
+    border-radius: 8px;
+  }
+  .queue {
+    gap: 12px;
+  }
+  .ticker-wrapper {
+    height: 52px;
+    margin-top: 10px;
+  }
+  .ticker-item {
+    font-size: 24px;
+  }
 }
