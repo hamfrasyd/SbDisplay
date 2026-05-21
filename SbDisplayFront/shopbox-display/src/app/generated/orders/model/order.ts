@@ -7,15 +7,16 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { Item } from './item';
 import { OrderStatus } from './orderStatus';
+import { OrderItem } from './orderItem';
 
 
 export interface Order { 
     id?: number;
     transactionId?: number;
     creationTime?: string;
-    items?: Array<Item> | null;
+    creationTimeUnix?: number | null;
+    items?: Array<OrderItem> | null;
     status?: OrderStatus;
 }
 export namespace Order {

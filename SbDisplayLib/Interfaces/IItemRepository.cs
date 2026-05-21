@@ -11,5 +11,8 @@ namespace SbDisplayLib.Interfaces
     public interface IItemRepository
     {
         public Item Create(Item item);
+
+        public List<OrderItem> GetByOrderTransactionId(int transactionId);
     }
+
 }

@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.base.service.ts
 api.module.ts
@@ -13,6 +12,7 @@ index.ts
 model/item.ts
 model/models.ts
 model/order.ts
+model/orderItem.ts
 model/orderStatus.ts
 model/problemDetails.ts
 model/transactionDto.ts
