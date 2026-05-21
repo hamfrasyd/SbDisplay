@@ -56,7 +56,7 @@ export class OrderDisplayStateService {
     private registerSignalRSubscriptions(): void {
         // Når SignalR pusher en ny ordre, tilføjes den til state-listen (_orders)
         this.signalRService.newOrder$.subscribe(newOrder => {
-            this.addOrderToList(newOrder);
+            this.upsertOrder(newOrder);
         });
 
         // Når SignalR pusher en statusopdatering, opdateres den tilsvarende ordre i state-listen (_orders).
