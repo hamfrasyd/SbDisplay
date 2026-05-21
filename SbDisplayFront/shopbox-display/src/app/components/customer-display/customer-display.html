@@ -1,13 +1,6 @@
 <div class="display">
-
-  <!-- ═══════════════════════════ LEFT — Tilbereder ═══════════════════════════ -->
   <div class="column left">
     <h2>Tilbereder</h2>
-
-    <!--
-      #leftGrid is the ViewChild reference used in .ts to measure available height.
-      The grid is flex-grow so it fills all remaining space after the heading.
-    -->
     <div class="queue" #leftGrid>
       @for (order of leftVisible(); track order.transactionId) {
         <div class="queue-item">
@@ -25,12 +18,7 @@
     @if (hasLeftOverflow()) {
       <div class="ticker-wrapper" aria-label="Flere ordrer under tilberedning">
         <div class="ticker-track left-ticker">
-          <!-- First copy -->
           @for (order of leftOverflow(); track 'a-' + order.transactionId) {
-            <span class="ticker-item">{{ order.id }}</span>
-          }
-          <!-- Second copy for seamless looping -->
-          @for (order of leftOverflow(); track 'b-' + order.transactionId) {
             <span class="ticker-item">{{ order.id }}</span>
           }
         </div>
@@ -56,9 +44,6 @@
       <div class="ticker-wrapper" aria-label="Flere ordrer klar til afhentning">
         <div class="ticker-track right-ticker">
           @for (order of rightOverflow(); track 'a-' + order.transactionId) {
-            <span class="ticker-item ready">{{ order.id }}</span>
-          }
-          @for (order of rightOverflow(); track 'b-' + order.transactionId) {
             <span class="ticker-item ready">{{ order.id }}</span>
           }
         </div>

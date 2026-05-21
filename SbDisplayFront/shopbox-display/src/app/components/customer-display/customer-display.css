@@ -149,18 +149,14 @@ html, body {
   align-items: center;
   gap: 16px;
   height: 100%;
-  /* Width: auto so it stretches to fit all items (both copies) */
   width: max-content;
-  padding: 0 24px;
 
-  /* The animation moves the track leftward by exactly 50% of its own width.
-     Because the track contains two identical copies of the overflow list,
-     50% of the total width = 100% of one copy, landing us right back at the
-     start visually. The loop is seamless. */
-  animation: ticker-scroll var(--ticker-duration, 12s) linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+
+  animation: ticker-scroll var(--ticker-duration, 20s) linear infinite;
 }
 
-/* Pause on hover — useful during testing, harmless in production */
 .ticker-track:hover {
   animation-play-state: paused;
 }
@@ -184,13 +180,41 @@ html, body {
   color: #3ab54a;
 }
 
-/* The keyframe: translate from 0% to -50% of the track's own width.
-   Since the track = 2× one copy, -50% = exactly one copy width,
-   which means at the end of the animation we're in the exact same
-   visual position as the start → perfect seamless loop. */
+/*
+  Right-to-left entry keyframe.
+
+  translateX values are relative to the *element itself* (the track),
+  not the wrapper. So we can't use a simple percentage to position
+  the track's left edge at the wrapper's right edge.
+
+  Instead we use calc() to combine:
+    - 100vw  → pushes the track's left edge to the right edge of the viewport
+               (close enough to the wrapper edge since each column is ~50vw)
+    - -100%  → pulls it back by the track's own full width at the end,
+               landing it fully off-screen to the left
+
+  Start:  left edge of track = right edge of wrapper  (off-screen right)
+  End:    right edge of track = left edge of wrapper  (off-screen left)
+
+  The gap between start and end is: wrapperWidth + trackWidth.
+  At the default 18s this reads at a comfortable walking pace.
+*/
 @keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+
+  /*
+    Start lige udenfor venstre kant
+    så første ordre kommer ind med det samme
+  */
+  from {
+    transform: translateX(-100%);
+  }
+
+  /*
+    Kør helt ud til højre
+  */
+  to {
+    transform: translateX(45vw);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
