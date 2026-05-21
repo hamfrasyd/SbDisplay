@@ -1,7 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 import { BASE_PATH } from './generated/orders';
 import { provideHttpClient } from '@angular/common/http';
 

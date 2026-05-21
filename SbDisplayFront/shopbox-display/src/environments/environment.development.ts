@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiUrl: 'http://localhost:5180'
+    apiUrl: 'https://shopboxdisplay.azurewebsites.net'
 };
