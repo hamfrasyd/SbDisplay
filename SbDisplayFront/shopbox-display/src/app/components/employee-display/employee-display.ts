@@ -22,14 +22,15 @@ export class EmployeeDisplay {
     public readonly cardErrors = signal<Map<number, string>>(new Map());
     public readonly pageError = signal<string | null>(null);
 
-    // Swipe state - only one card can be swiped at a time
+    // Swipe state - only one card can be swiped at a time.
+    // pendingSwipeTransactionId is a plain field (not a signal) intentionally:
+    // updating a signal on every pointerdown triggers Angular re-renders mid-dblclick,
+    // which breaks browser dblclick detection across all input types.
     public readonly swipingTransactionId = signal<number | null>(null);
     public readonly swipeDeltaX = signal<number>(0);
 
     private swipeStartX: number = 0;
-    private swipeStartY: number = 0;
-    private movedDuringGesture: boolean = false;
-
+    private pendingSwipeTransactionId: number | null = null;
     private readonly swipeThresholdPixels: number = 100;
     private readonly movementThresholdPixels: number = 5;
 
@@ -59,11 +60,6 @@ export class EmployeeDisplay {
     }
 
     public onCardDoubleClick(order: Order): void {
-        // Suppress dblclick if the gesture involved meaningful movement (i.e. a swipe)
-        if (this.movedDuringGesture === true) {
-            return;
-        }
-
         if (order.status === OrderStatus.UnderPreparation) {
             this.setStatus(order, OrderStatus.ReadyForPickup);
             return;
@@ -95,8 +91,6 @@ export class EmployeeDisplay {
     }
 
     public onPointerDown(event: PointerEvent, order: Order): void {
-        this.movedDuringGesture = false;
-
         if (this.isSwipeable(order) === false) {
             return;
         }
@@ -105,46 +99,41 @@ export class EmployeeDisplay {
             return;
         }
 
+        // Record start position only — no signal updates, no setPointerCapture.
+        // Signals and capture are deferred to onPointerMove once horizontal movement is confirmed,
+        // so that taps and dblclicks are completely unaffected by the swipe setup.
         this.swipeStartX = event.clientX;
-        this.swipeStartY = event.clientY;
-        this.swipingTransactionId.set(order.transactionId);
-        this.swipeDeltaX.set(0);
-
-        (event.currentTarget as Element).setPointerCapture(event.pointerId);
+        this.pendingSwipeTransactionId = order.transactionId;
     }
 
     public onPointerMove(event: PointerEvent, order: Order): void {
-        if (this.swipingTransactionId() !== order.transactionId) {
+        if (this.pendingSwipeTransactionId === null) {
             return;
         }
 
         const deltaX = event.clientX - this.swipeStartX;
-        const deltaY = event.clientY - this.swipeStartY;
 
-        if (Math.abs(deltaX) > this.movementThresholdPixels || Math.abs(deltaY) > this.movementThresholdPixels) {
-            this.movedDuringGesture = true;
+        // Commit to swipe only once horizontal movement is confirmed.
+        // This is the first point where we update signals or capture the pointer.
+        if (this.swipingTransactionId() === null && Math.abs(deltaX) > this.movementThresholdPixels) {
+            this.swipingTransactionId.set(this.pendingSwipeTransactionId);
+            (event.currentTarget as Element).setPointerCapture(event.pointerId);
         }
 
-        // Only track left swipes; ignore rightward movement
-        if (deltaX < 0) {
+        if (this.swipingTransactionId() !== null && deltaX < 0) {
             this.swipeDeltaX.set(deltaX);
-        } else {
-            this.swipeDeltaX.set(0);
         }
     }
 
-    public onPointerEnd(event: PointerEvent, order: Order): void {
-        if (this.swipingTransactionId() !== order.transactionId) {
-            return;
-        }
-
+    public onPointerEnd(_event: PointerEvent, order: Order): void {
+        const wasActiveSwipe = this.swipingTransactionId() !== null;
         const finalDeltaX = this.swipeDeltaX();
 
-        // Reset visual state before triggering action so card snaps back during the API call
+        this.pendingSwipeTransactionId = null;
         this.swipingTransactionId.set(null);
         this.swipeDeltaX.set(0);
 
-        if (Math.abs(finalDeltaX) >= this.swipeThresholdPixels) {
+        if (wasActiveSwipe && Math.abs(finalDeltaX) >= this.swipeThresholdPixels) {
             this.setStatus(order, OrderStatus.UnderPreparation);
         }
     }
