@@ -40,7 +40,7 @@ namespace SbDisplayLib.Repositories
                 using var reader = command.ExecuteReader();
 
                 if (!reader.Read())
-                    throw new InvalidOperationException("Insert did not return the created order.");
+                    return Result<Order>.Fail(ErrorCode.DatabaseFailure, "Insert did not return the created order.");
 
                 int orderIdOrdinal = reader.GetOrdinal("OrderId");
                 int transactionOrdinal = reader.GetOrdinal("TransactionId");
@@ -77,7 +77,6 @@ namespace SbDisplayLib.Repositories
             {
                 const string sql = """
                     INSERT INTO [dbo].[OrdersItems] (OrderTransactionId, ItemId, Quantity)
-                    OUTPUT INSERTED.OrderTransactionId, INSERTED.ItemId, INSERTED.Quantity
                     VALUES (@OrderTransactionId, @ItemId, @Quantity)
                     """;
 
@@ -93,11 +92,7 @@ namespace SbDisplayLib.Repositories
                 using var reader = command.ExecuteReader();
 
                 if (!reader.Read())
-                    throw new InvalidOperationException("Insert could not create the relationship between order and item");
-
-                int orderTransactionIdOrdinal = reader.GetOrdinal("OrderTransactionId");
-                int itemOrdinal = reader.GetOrdinal("ItemId");
-                int quantityOrdinal = reader.GetOrdinal("Quantity");
+                    return Result<OrderItem>.Fail(ErrorCode.DatabaseFailure, "Insert could not create the relationship between order and item");
 
                 OrderItem createdRelation = new OrderItem
                 {
@@ -118,15 +113,18 @@ namespace SbDisplayLib.Repositories
             }
         }
 
-        public Result<List<Order>> GetAll()
+        public Result<List<Order>> GetAllWithItems()
         {
             try
             {
-                var orderList = new List<Order>();
-
                 const string sql = """
-                    SELECT OrderId, TransactionId, StatusId, CreationTimeUnix, CreationTime FROM [dbo].[Orders]
-                    """;
+            SELECT
+                o.OrderId, o.TransactionId, o.StatusId, o.CreationTimeUnix, o.CreationTime,
+                oi.Quantity, i.ItemId, i.Name
+            FROM [dbo].[Orders] o
+            LEFT JOIN [dbo].[OrdersItems] oi ON o.TransactionId = oi.OrderTransactionId
+            LEFT JOIN [dbo].[Items] i ON oi.ItemId = i.ItemId
+            """;
 
                 using var connection = new SqlConnection(_connectionString);
                 using var command = new SqlCommand(sql, connection);
@@ -139,70 +137,144 @@ namespace SbDisplayLib.Repositories
                 int statusOrdinal = reader.GetOrdinal("StatusId");
                 int creationUnixOrdinal = reader.GetOrdinal("CreationTimeUnix");
                 int creationOrdinal = reader.GetOrdinal("CreationTime");
+                int quantityOrdinal = reader.GetOrdinal("Quantity");
+                int itemIdOrdinal = reader.GetOrdinal("ItemId");
+                int nameOrdinal = reader.GetOrdinal("Name");
+
+                var orders = new Dictionary<int, Order>();
 
                 while (reader.Read())
                 {
-                    var order = new Order
+                    int transactionId = reader.GetInt32(transactionOrdinal);
+
+                    if (!orders.TryGetValue(transactionId, out var order))
+                    {
+                        order = new Order
+                        {
+                            Id = reader.GetInt32(orderIdOrdinal),
+                            TransactionId = transactionId,
+                            Status = (OrderStatus)reader.GetInt32(statusOrdinal),
+                            CreationTimeUnix = reader.GetInt64(creationUnixOrdinal),
+                            CreationTime = reader.GetDateTimeOffset(creationOrdinal),
+                            Items = new List<OrderItem>()
+                        };
+                        orders[transactionId] = order;
+                    }
+
+                    if (!reader.IsDBNull(itemIdOrdinal))
+                    {
+                        order.Items!.Add(new OrderItem
+                        {
+                            Quantity = reader.GetInt32(quantityOrdinal),
+                            Item = new Item
+                            {
+                                Id = reader.GetInt32(itemIdOrdinal),
+                                Name = reader.GetString(nameOrdinal)
+                            }
+                        });
+                    }
+                }
+
+                return Result<List<Order>>.Ok(orders.Values.ToList());
+            }
+            catch (SqlException ex)
+            {
+                return Result<List<Order>>.Fail(ErrorCode.DatabaseFailure,
+                    $"Failed to retrieve orders from the database (SQL {ex.Number}): {ex.Message}");
+            }
+        }
+
+        public Result<Order> UpdateOrderStatus(int transactionId, OrderStatus statusId)
+        {
+            try
+            {
+                //Vi skal validerer vores parameter input. (Handler?)
+                //Vi skal lave et SQL script.			
+                const string updateQuery = """
+                    UPDATE Orders
+                    SET StatusId = @StatusId
+                    OUTPUT
+                        INSERTED.TransactionId,
+                        INSERTED.StatusId,
+                        INSERTED.OrderId,
+                        INSERTED.CreationTime
+                    WHERE TransactionId = @TransactionId
+                    """;
+
+                //Så vi skal åbne vores SQL connection.
+                using var connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                using var command = new SqlCommand(updateQuery, connection);
+                command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)statusId;
+                command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = transactionId;
+
+                using var reader = command.ExecuteReader();
+
+                int orderIdOrdinal = reader.GetOrdinal("OrderId");
+                int transactionOrdinal = reader.GetOrdinal("TransactionId");
+                int statusOrdinal = reader.GetOrdinal("StatusId");
+                int creationOrdinal = reader.GetOrdinal("CreationTime");
+
+                if (reader.Read())
+                {
+                    var updatedOrder = new Order
                     {
                         Id = reader.GetInt32(orderIdOrdinal),
                         TransactionId = reader.GetInt32(transactionOrdinal),
                         Status = (OrderStatus)reader.GetInt32(statusOrdinal),
-                        CreationTimeUnix = reader.GetInt64(creationUnixOrdinal),
                         CreationTime = reader.GetDateTimeOffset(creationOrdinal)
                     };
-                    orderList.Add(order);
+
+                    return Result<Order>.Ok(updatedOrder);
                 }
 
-                return Result<List<Order>>.Ok(orderList);
+                return Result<Order>.Fail(ErrorCode.NotFound, $"No order with Transactionid {transactionId} was found.");
+            }
+            catch (SqlException ex) when (ex.Number == 1205)
+            {
+                return Result<Order>.Fail(
+                    ErrorCode.DatabaseFailure,
+                    $"The update was caught in a deadlock (SQL {ex.Number}). Please retry.");
+            }
+            catch (SqlException ex) when (ex.Number == 1222)
+            {
+                return Result<Order>.Fail(
+                    ErrorCode.DatabaseFailure,
+                    $"The update timed out waiting for a row lock (SQL {ex.Number}). Please retry.");
+            }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                // FK violation: StatusId value doesn't exist in the Statuses table
+                return Result<Order>.Fail(
+                    ErrorCode.InvalidInput,
+                    $"StatusId {(int)statusId} is not a valid status (SQL {ex.Number}).");
+            }
+            catch (SqlException ex) when (ex.Number == 515)
+            {
+                return Result<Order>.Fail(
+                    ErrorCode.InvalidInput,
+                    $"Update rejected: a required column value was null (SQL {ex.Number}).");
+            }
+            catch (SqlException ex) when (ex.Number == 8152)
+            {
+                return Result<Order>.Fail(
+                    ErrorCode.InvalidInput,
+                    $"Update rejected: a value exceeded the allowed column length (SQL {ex.Number}).");
             }
             catch (SqlException ex)
             {
-                return Result<List<Order>>.Fail(ErrorCode.DatabaseFailure, "Failed to retrieve Orders from the database");
+                return Result<Order>.Fail(
+                    ErrorCode.DatabaseFailure,
+                    $"An unexpected database error occurred (SQL {ex.Number}): {ex.Message}");
             }
-        }
-
-        public Order? UpdateOrderStatus(int transactionId, OrderStatus statusId)
-        {
-            //Vi skal validerer vores parameter input. (Handler?)
-            //Vi skal lave et SQL script.			
-            const string updateQuery ="""
-                UPDATE Orders
-                SET StatusId = @StatusId
-                OUTPUT
-                INSERTED.TransactionId,
-                INSERTED.StatusId,
-                INSERTED.OrderId,
-                INSERTED.CreationTime
-                WHERE TransactionId = @TransactionId
-                """;
-
-
-            //Så vi skal åbne vores SQL connection.
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
-
-            using var command = new SqlCommand(updateQuery, connection);
-            command.Parameters.Add("@StatusId", SqlDbType.Int).Value = (int)statusId;
-            command.Parameters.Add("@TransactionId", SqlDbType.Int).Value = transactionId;
-
-            using var reader = command.ExecuteReader();
-
-            int orderIdOrdinal = reader.GetOrdinal("OrderId");
-            int transactionOrdinal = reader.GetOrdinal("TransactionId");
-            int statusOrdinal = reader.GetOrdinal("StatusId");
-            int creationOrdinal = reader.GetOrdinal("CreationTime");
-
-            if (reader.Read())
+            catch (InvalidOperationException ex)
             {
-                return new Order
-                {
-                    Id = reader.GetInt32(orderIdOrdinal),
-                    TransactionId = reader.GetInt32(transactionOrdinal),
-                    Status = (OrderStatus)reader.GetInt32(statusOrdinal),
-                    CreationTime = reader.GetDateTimeOffset(creationOrdinal)
-                };
+                // Covers SqlConnection misuse, e.g. trying to open an already-open connection
+                return Result<Order>.Fail(
+                    ErrorCode.DatabaseFailure,
+                    $"A connection error occurred: {ex.Message}");
             }
-            return null;
         }
     }
 }

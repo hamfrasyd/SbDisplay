@@ -14,11 +14,11 @@ namespace SbDisplayApi.Controllers
     [ApiController]
     public class WebHooksController : ControllerBase
     {
-        private NewOrderHandler _newOrderHandler;
+        private readonly NewOrderHandler _newOrderHandler;
 
         // Giver controlleren adgang til SignalR, så webhook'et kan give frontend besked,
         // når en ny ordre er blevet oprettet i systemet.
-        private IHubContext<ShopboxHub> _shopboxHubContext;
+        private readonly IHubContext<ShopboxHub> _shopboxHubContext;
 
         public WebHooksController(NewOrderHandler newOrderHandler, IHubContext<ShopboxHub> shopboxHubContext)
         {

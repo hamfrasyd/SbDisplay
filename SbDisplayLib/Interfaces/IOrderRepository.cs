@@ -12,8 +12,8 @@ namespace SbDisplayLib.Interfaces
         /// <summary>Updates the status of an order</summary>
         /// <param name="transactionId">The unique id of an order</param>
         /// <param name="status">The new status for the order</param>
-        /// <returns>Either the updated order or null if order doesn't exist</returns>
-        public Order? UpdateOrderStatus(int transactionId, OrderStatus status);
+        /// <returns>Either the updated order or not found if the order doesn't exist</returns>
+        public Result<Order> UpdateOrderStatus(int transactionId, OrderStatus status);
 
         /// <summary>Creates a new order and adds it to the system.</summary>
         /// <param name="newOrder">The order to be created.</param>
@@ -27,6 +27,6 @@ namespace SbDisplayLib.Interfaces
 
         /// <summary>Retrieves all orders from the database.</summary>
         /// <returns>A list of retrieved orders</returns>
-        public Result<List<Order>> GetAll();
+        public Result<List<Order>> GetAllWithItems();
     }
 }

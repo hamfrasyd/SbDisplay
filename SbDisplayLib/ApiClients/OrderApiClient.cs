@@ -40,11 +40,11 @@ namespace SbDisplayLib.ApiClients
 
                 if (result is null)
                 {
-                    throw new InvalidOperationException("Order response was empty");
+                    return Result<Order>.Fail(ErrorCode.ExternalApiFailure, "Order response was empty.");
                 }
 
                 var order = OrderDtoToOrderConverter.Convert(result);
-                order.Status = (OrderStatus)1;
+                order.Status = OrderStatus.UnderPreparation;
 
                 return Result<Order>.Ok(order);
             }

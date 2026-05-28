@@ -36,7 +36,8 @@ namespace SbDisplayLib.Repositories
                 using var reader = command.ExecuteReader();
 
                 if (!reader.Read())
-                    throw new InvalidOperationException("Insert did not return the created item.");
+                    return Result<Item>.Fail(ErrorCode.DatabaseFailure,
+                        "Insert did not return the created item.");
 
                 int itemIdOrdinal = reader.GetOrdinal("ItemId");
                 int nameOrdinal = reader.GetOrdinal("Name");
