@@ -16,13 +16,13 @@ jobs:
   pool:
     vmImage: ubuntu-latest
   variables:
-  - group: Azure-Static-Web-Apps-wonderful-rock-032e49f10-variable-group
+  - group: Azure-Static-Web-Apps-kind-plant-05eaf2303-variable-group
   steps:
   - checkout: self
     submodules: true
   - task: AzureStaticWebApp@0
     inputs:
-      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_WONDERFUL_ROCK_032E49F10)
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_KIND_PLANT_05EAF2303)
 ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
 # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
       app_location: "/SbDisplayFront/shopbox-display" # App source code path
