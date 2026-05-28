@@ -33,7 +33,7 @@
 }
 
 .order-card-ready {
-  border-color: #0E9E73;
+  border-color: #3ab54a;
   border-width: 2px;
   background-color: #d1e7dd;
 }
@@ -192,3 +192,9 @@
   background-color: #6ee7b7;
   color: #064e3b;
 }
+
+.order-card-too-old {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+}
+
