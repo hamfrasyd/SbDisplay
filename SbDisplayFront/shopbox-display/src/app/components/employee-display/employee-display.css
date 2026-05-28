@@ -1,12 +1,27 @@
+:host {
+  display: block;
+  background-color: #ebe9e9;
+  min-height: 100vh;
+}
+
 .order-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   touch-action: manipulation;
+  height: 20rem;
+}
+
+.order-card-expanded {
+  height: auto;
+  min-height: 20rem;
 }
 
 .order-card-body {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -31,24 +46,71 @@
   cursor: default;
 }
 
+/* Independent column stacks — each column grows/collapses independently */
+.order-columns-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.order-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Expanded card: allow body to show all content */
+.order-card-expanded .order-card-body {
+  overflow: visible;
+}
+
 /* Sticky tab bar */
+.tab-bar-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.tab-bar-row .nav-tabs {
+  flex-wrap: nowrap;
+}
+
+.tab-bar-logo-link {
+  display: flex;
+  align-items: center;
+}
+
+.tab-bar-logo {
+  height: 4rem;
+  width: auto;
+  object-fit: contain;
+  align-self: center;
+}
+
 .employee-tab-bar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: #ebe9e9;
+  background-color: #ffffff;
   padding: 0.5rem 0 0;
   box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.06);
 }
 
-.nav-tabs .nav-link {
+.nav-tabs .nav-link { 
   color: #495057;
-  font-size: 1.5rem;
-  padding: 0.75rem 1.5rem;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  padding: 0.75rem clamp(2rem, 10vw, 6rem);
+  box-shadow: 0 0.1rem 0.2rem #ebe9e9;
+
 }
 
 .nav-tabs .nav-link.active {
   font-weight: 600;
+  background-color: #ebe9e9;
+  border-bottom-color: #ebe9e9;
 }
 
 /* Swipe-to-revert support */
@@ -87,13 +149,25 @@
   transition: none;
 }
 
-/* Compact cards with no items */
-.order-col-no-items {
-  align-self: flex-start;
+/* Show-more / show-less toggle in card body */
+.order-items-toggle {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 0;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: #3ab54a;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.order-card-no-items {
-  min-height: 18.75rem;
+.order-items-toggle:hover {
+  color: #6cca78;
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 /* Status change buttons - custom palette */
