@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
+using SbDisplayLib.Common;
 using SbDisplayLib.Converters;
 using SbDisplayLib.Dtos;
 using SbDisplayLib.Enums;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace SbDisplayLib.ApiClients
@@ -20,24 +22,36 @@ namespace SbDisplayLib.ApiClients
                 ?? throw new InvalidOperationException("OrderApi:ApiToken is not configured.");
         }
 
-        public async Task<Order> GetOrderAsync(int transactionId)
+        public async Task<Result<Order>> GetOrderAsync(int transactionId)
         {
             var url = $"api/v3/baskets/{transactionId}?api-token={_apiKey}";
 
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<OrderDto>();
-
-            if(result is null) 
+            try
             {
-                throw new InvalidOperationException("Order response was empty");
+                var response = await _httpClient.GetAsync(url);
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return Result<Order>.Fail(ErrorCode.NotFound,
+                        $"No order found for transaction {transactionId}.");
+
+                response.EnsureSuccessStatusCode();
+
+                var result = await response.Content.ReadFromJsonAsync<OrderDto>();
+
+                if (result is null)
+                {
+                    throw new InvalidOperationException("Order response was empty");
+                }
+
+                var order = OrderDtoToOrderConverter.Convert(result);
+                order.Status = (OrderStatus)1;
+
+                return Result<Order>.Ok(order);
             }
-
-            var order = OrderDtoToOrderConverter.Convert(result);
-            order.Status = (OrderStatus)1;
-
-            return order;
+            catch (HttpRequestException ex)
+            {
+                return Result<Order>.Fail(ErrorCode.ExternalApiFailure, ex.Message);
+            }
         }
     }
 }

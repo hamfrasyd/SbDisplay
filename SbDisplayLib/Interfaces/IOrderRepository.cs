@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Enums;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Enums;
 using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Interfaces
@@ -17,15 +18,15 @@ namespace SbDisplayLib.Interfaces
         /// <summary>Creates a new order and adds it to the system.</summary>
         /// <param name="newOrder">The order to be created.</param>
         /// <returns>The created order</returns>
-        public Order Create(Order newOrder);
+        public Result<Order> Create(Order newOrder);
 
         /// <summary>Creates the new relation between the Order and it's item</summary>
         /// <param name="order">The order part of the relationship</param>
         /// <param name="orderItem">The item part of the relationship</param>
-        public OrderItem CreateItemOrderRelation(Order order, OrderItem orderItem);
+        public Result<OrderItem> CreateItemOrderRelation(Order order, OrderItem orderItem);
 
         /// <summary>Retrieves all orders from the database.</summary>
         /// <returns>A list of retrieved orders</returns>
-        public List<Order> GetAll();
+        public Result<List<Order>> GetAll();
     }
 }

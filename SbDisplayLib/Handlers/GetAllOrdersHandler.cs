@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Interfaces;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Handlers
@@ -14,17 +15,28 @@ namespace SbDisplayLib.Handlers
             _itemRepository = itemRepository;
         }
 
-        public List<Order> Execute()
+        public Result<List<Order>> Execute()
         {
             //Henter alle ordrer fra databasen
-            List<Order> orders = _orderRepository.GetAll();
+            var orderListResult = _orderRepository.GetAll();
+            if (!orderListResult.TryGetValue(out var orders))
+            {
+                return orderListResult;
+            }
 
             //henter items til hver ordre
             foreach (Order order in orders)
             {
-                order.Items = _itemRepository.GetByOrderTransactionId(order.TransactionId);
+                var orderItemResult = _itemRepository.GetByOrderTransactionId(order.TransactionId);
+                if(!orderItemResult.IsSuccess)
+                {
+                    return orderItemResult.PropagateFailure<List<Order>>();
+                }
+
+                order.Items = orderItemResult.Value;
             }
-            return orders;
+
+            return Result<List<Order>>.Ok(orders);
         }
     }
 }

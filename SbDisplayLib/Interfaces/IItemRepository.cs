@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Models;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +11,9 @@ namespace SbDisplayLib.Interfaces
 {
     public interface IItemRepository
     {
-        public Item Create(Item item);
+        public Result<Item> Create(Item item);
 
-        public List<OrderItem> GetByOrderTransactionId(int transactionId);
+        public Result<List<OrderItem>> GetByOrderTransactionId(int transactionId);
     }
 
 }

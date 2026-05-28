@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
 using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.EnumHelpers;
+using SbDisplayLib.Enums;
 using SbDisplayLib.Handlers;
 using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
@@ -34,30 +35,24 @@ namespace SbDisplayApi.Controllers
         [HttpGet(Name = "GetAllOrders")]
         [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public IActionResult Get()
         {
-            var orders = _getAllOrdersHandler.Execute();
+            var result = _getAllOrdersHandler.Execute();
 
-            if (orders == null || orders.Count == 0)
+            if (!result.IsSuccess)
+                return result.Error switch
+                {
+                    ErrorCode.DatabaseFailure => StatusCode(500, result.ErrorMessage),
+                    _ => StatusCode(500, result.ErrorMessage)
+                };
+
+            if (result.Value == null || result.Value.Count == 0)
             {
                 return NoContent();
             }
 
-            return Ok(orders);
-        }
-
-        // GET api/<OrdersController>/5
-        [HttpGet("{id}", Name = "GetOrderById")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<OrdersController>
-        [HttpPost(Name = "CreateOrder")]
-        public async Task<IActionResult> Post([FromBody] string value)
-        {
-            return Ok();
+            return Ok(result.Value);
         }
 
         // PUT api/<OrdersController>/5
@@ -98,12 +93,6 @@ namespace SbDisplayApi.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while updating the order.");
                 }
             }
-        }
-
-        // DELETE api/<OrdersController>/5
-        [HttpDelete("{id}", Name = "DeleteOrder")]
-        public void Delete(int id)
-        {
         }
     }
 }

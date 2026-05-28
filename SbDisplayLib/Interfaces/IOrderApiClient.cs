@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Models;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Interfaces
 {
@@ -12,6 +13,6 @@ namespace SbDisplayLib.Interfaces
         /// </summary>
         /// <param name="transactionId">The unique identifier of the transaction for which to retrieve the order. Must be a positive integer.</param>
         /// <returns>The order associated with the specified transaction identifier.</returns>
-        Task<Order> GetOrderAsync(int transactionId);
+        Task<Result<Order>> GetOrderAsync(int transactionId);
     }
 }

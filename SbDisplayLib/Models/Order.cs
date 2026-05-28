@@ -23,6 +23,12 @@ namespace SbDisplayLib.Models
 
         /// <summary>The status of an order.</summary>
         public OrderStatus Status { get; set; }
-        
+
+        public override string ToString()
+        {
+            return $"Order #{Id} (Tx: {TransactionId}) | Status: {Status} | " +
+                   $"Created: {CreationTime:yyyy-MM-dd HH:mm:ss zzz} | " +
+                   $"Items: {Items?.Count ?? 0}";
+        }
     }
 }
