@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import {ChangeDetectorRef, Component, computed, signal } from '@angular/core';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { Order, OrderStatus } from '../../generated/orders';
 import { DatePipe } from '@angular/common';
@@ -49,7 +49,36 @@ export class EmployeeDisplay {
         return this.completedOrders();
     });
 
-    constructor(public orderDisplayState: OrderDisplayStateService) { }
+    public readonly now = signal(Date.now());
+
+    constructor(public orderDisplayState: OrderDisplayStateService, private cdr: ChangeDetectorRef) { 
+        setInterval(() => {
+            this.now.set(Date.now());
+            this.cdr.detectChanges();
+        }, 60000);
+    }
+
+    public getElapsedMinutes(order: Order): string {
+    if (!order.creationTime) {
+        return '0 min';
+    }
+
+    const createdAt = new Date(order.creationTime).getTime();
+    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+
+    return `${minutes} min`;
+}
+
+public isOlderThanFiveMinutes(order: Order): boolean {
+    if (!order.creationTime) {
+        return false;
+    }
+
+    const createdAt = new Date(order.creationTime).getTime();
+    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+
+    return minutes >= 5;
+}
 
     public setActiveTab(tab: EmployeeTab): void {
         this.activeTab.set(tab);
