@@ -1,38 +1,45 @@
-<div class="container-fluid py-4">
+<!-- Sticky tab bar -->
+<div class="employee-tab-bar">
+  <div class="container-fluid">
 
-  <!-- Page error message -->
-  @if (pageError(); as error) {
-  <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center" role="alert">
-    <span>{{ error }}</span>
-    <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+    <!-- Page error message -->
+    @if (pageError(); as error) {
+    <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+    </div>
+    }
+
+    <!-- Tab navigation -->
+    <ul class="nav nav-tabs border-0">
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
+          (click)="setActiveTab(employeeTab.Received)">
+          Modtaget
+          <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
+          (click)="setActiveTab(employeeTab.Completed)">
+          Færdig
+          <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
+        </button>
+      </li>
+    </ul>
+
   </div>
-  }
+</div>
 
-  <!-- Tab navigation -->
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
-        (click)="setActiveTab(employeeTab.Received)">
-        Modtaget
-        <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
-      </button>
-    </li>
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
-        (click)="setActiveTab(employeeTab.Completed)">
-        Færdig
-        <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
-      </button>
-    </li>
-  </ul>
+<div class="container-fluid py-4">
 
   <!-- Currently displayed orders grid -->
   <div class="row g-3">
     @for (order of currentlyDisplayedOrders(); track order.transactionId) {
-    <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+    <div class="col-12 col-md-6 col-lg-4 col-xl-3" [class.order-col-no-items]="!order.items?.length">
 
       <!-- Swipe container wraps each card so the revert indicator can be revealed behind it -->
-      <div class="order-swipe-container h-100">
+      <div class="order-swipe-container">
 
         <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
         @if (isSwipeable(order)) {
@@ -45,6 +52,7 @@
       <div class="card order-card d-flex flex-column"
           [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
           [class.order-card-completed]="order.status === orderStatus.Completed"
+          [class.order-card-no-items]="!order.items?.length"
           [class.order-card-swipeable]="isSwipeable(order)" [class.order-card-swiping]="isCurrentlySwiping(order)"
           [style.transform]="getSwipeTransform(order)" (pointerdown)="onPointerDown($event, order)"
           (pointermove)="onPointerMove($event, order)" (pointerup)="onPointerEnd($event, order)"

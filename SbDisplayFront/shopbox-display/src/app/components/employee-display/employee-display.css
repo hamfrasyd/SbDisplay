@@ -1,5 +1,4 @@
 .order-card {
-  height: 300px;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
   display: flex;
@@ -8,9 +7,6 @@
 }
 
 .order-card-body {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 180px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -35,8 +31,20 @@
   cursor: default;
 }
 
+/* Sticky tab bar */
+.employee-tab-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #ebe9e9;
+  padding: 0.5rem 0 0;
+  box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.06);
+}
+
 .nav-tabs .nav-link {
   color: #495057;
+  font-size: 1.5rem;
+  padding: 0.75rem 1.5rem;
 }
 
 .nav-tabs .nav-link.active {
@@ -77,6 +85,15 @@
 /* Disable transition while actively dragging so the card tracks the finger 1:1 */
 .order-card.order-card-swiping {
   transition: none;
+}
+
+/* Compact cards with no items */
+.order-col-no-items {
+  align-self: flex-start;
+}
+
+.order-card-no-items {
+  min-height: 18.75rem;
 }
 
 /* Status change buttons - custom palette */
