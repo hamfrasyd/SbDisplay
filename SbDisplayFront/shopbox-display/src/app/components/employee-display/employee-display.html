@@ -1,38 +1,54 @@
+<!-- Sticky tab bar -->
+<div class="employee-tab-bar">
+  <div class="container-fluid">
+
+    <!-- Page error message -->
+    @if (pageError(); as error) {
+    <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2"
+      role="alert">
+      <span>{{ error }}</span>
+      <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+    </div>
+    }
+
+    <!-- Tab bar row: tabs left, logo right -->
+    <div class="tab-bar-row">
+      <ul class="nav nav-tabs border-0">
+        <li class="nav-item">
+          <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
+            (click)="setActiveTab(employeeTab.Received)">
+            Modtaget
+            <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
+            (click)="setActiveTab(employeeTab.Completed)">
+            Færdig
+            <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Logo — læg filen i public/ og opdater filnavnet her -->
+      <a href="/" class="tab-bar-logo-link">
+        <img src="shopbox-logo.png" alt="Logo" class="tab-bar-logo" />
+      </a>
+    </div>
+
+  </div>
+</div>
+
 <div class="container-fluid py-4">
 
-  <!-- Page error message -->
-  @if (pageError(); as error) {
-  <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center" role="alert">
-    <span>{{ error }}</span>
-    <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
-  </div>
-  }
-
-  <!-- Tab navigation -->
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
-        (click)="setActiveTab(employeeTab.Received)">
-        Modtaget
-        <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
-      </button>
-    </li>
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
-        (click)="setActiveTab(employeeTab.Completed)">
-        Færdig
-        <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
-      </button>
-    </li>
-  </ul>
-
-  <!-- Currently displayed orders grid -->
-  <div class="row g-3">
-    @for (order of currentlyDisplayedOrders(); track order.transactionId) {
-    <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+  <!-- Currently displayed orders grid — independent column stacks so expanding one card only affects its own column -->
+  <div class="order-columns-grid">
+    @for (col of ordersInColumns(); track $index) {
+    <div class="order-column">
+      @for (order of col; track order.transactionId) {
 
       <!-- Swipe container wraps each card so the revert indicator can be revealed behind it -->
-      <div class="order-swipe-container h-100">
+      <div class="order-swipe-container">
 
         <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
         @if (isSwipeable(order)) {
@@ -46,13 +62,10 @@
           [class.order-card-too-old]="isOlderThanFiveMinutes(order) && order.status !== orderStatus.ReadyForPickup && order.status !== orderStatus.Completed"
           [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
           [class.order-card-completed]="order.status === orderStatus.Completed"
-          [class.order-card-swipeable]="isSwipeable(order)"
-          [class.order-card-swiping]="isCurrentlySwiping(order)"
-          [style.transform]="getSwipeTransform(order)"
-          (pointerdown)="onPointerDown($event, order)"
-          (pointermove)="onPointerMove($event, order)"
-          (pointerup)="onPointerEnd($event, order)"
-          (pointercancel)="onPointerEnd($event, order)">
+          [class.order-card-expanded]="isCardExpanded(order)" [class.order-card-swipeable]="isSwipeable(order)"
+          [class.order-card-swiping]="isCurrentlySwiping(order)" [style.transform]="getSwipeTransform(order)"
+          (pointerdown)="onPointerDown($event, order)" (pointermove)="onPointerMove($event, order)"
+          (pointerup)="onPointerEnd($event, order)" (pointercancel)="onPointerEnd($event, order)">
 
           <!-- Order card header -->
           <div class="card-header d-flex justify-content-between align-items-center"
@@ -64,23 +77,37 @@
           <!-- Order card body -->
           <div class="card-body order-card-body" (dblclick)="onCardDoubleClick(order)">
             @if (order.items?.length) {
-              <ul class="list-group list-group-flush">
-                @for (orderItem of order.items; track orderItem.item?.id) {
-                  <li class="list-group-item px-0 py-1 border-0 bg-transparent">
-                    <span class="badge bg-secondary me-2">
-                      {{ orderItem.quantity }}x
-                    </span>
-
-                    {{ orderItem.item?.name }}
-                  </li>
-                }
-              </ul>
+            <ul class="list-group list-group-flush">
+              @for (orderItem of visibleItems(order); track orderItem.item?.id) {
+              <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+                <span class="badge bg-secondary me-2">
+                  {{ orderItem.quantity }}x
+                </span>
+                {{ orderItem.item?.name }}
+              </li>
+              }
+            </ul>
+            @if (hiddenItemCount(order) > 0 || isCardExpanded(order)) {
+            <button type="button" class="order-items-toggle mt-2" (click)="toggleCardExpanded(order, $event)">
+              @if (isCardExpanded(order)) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
+                class="bi bi-hand-index me-1" viewBox="0 0 16 16" style="transform: rotate(180deg)">
+                <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>              </svg>
+              Vis færre
+              } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
+                class="bi bi-hand-index me-1" viewBox="0 0 16 16">
+                <path
+                  d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
+              </svg>
+              Vis flere vare +{{ hiddenItemCount(order) }}
+              }
+            </button>
+            }
             } @else {
-              <p class="text-muted mb-0">Ingen varer</p>
+            <p class="text-muted mb-0">Ingen varer</p>
             }
           </div>
-
-          
 
           <!-- Order card footer -->
           <div class="card-footer mt-auto card-header d-flex justify-content-between align-items-center">
@@ -116,15 +143,15 @@
           </div>
         </div>
       </div>
-    </div>
-    }
 
-    <!-- Empty state if no orders -->
-    @if (currentlyDisplayedOrders().length === 0) {
-    <div class="col-12">
-      <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
+      }
     </div>
     }
   </div>
+
+  <!-- Empty state if no orders -->
+  @if (currentlyDisplayedOrders().length === 0) {
+  <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
+  }
 
 </div>
