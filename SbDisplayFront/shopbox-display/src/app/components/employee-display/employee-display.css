@@ -101,3 +101,9 @@
   background-color: #6ee7b7;
   color: #064e3b;
 }
+
+.order-card-too-old {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+}
+

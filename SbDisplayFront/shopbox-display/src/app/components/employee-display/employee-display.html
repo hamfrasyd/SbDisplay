@@ -43,11 +43,15 @@
 
               <!-- Order card -->
       <div class="card order-card d-flex flex-column"
+          [class.order-card-too-old]="isOlderThanFiveMinutes(order) && order.status !== orderStatus.ReadyForPickup && order.status !== orderStatus.Completed"
           [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
           [class.order-card-completed]="order.status === orderStatus.Completed"
-          [class.order-card-swipeable]="isSwipeable(order)" [class.order-card-swiping]="isCurrentlySwiping(order)"
-          [style.transform]="getSwipeTransform(order)" (pointerdown)="onPointerDown($event, order)"
-          (pointermove)="onPointerMove($event, order)" (pointerup)="onPointerEnd($event, order)"
+          [class.order-card-swipeable]="isSwipeable(order)"
+          [class.order-card-swiping]="isCurrentlySwiping(order)"
+          [style.transform]="getSwipeTransform(order)"
+          (pointerdown)="onPointerDown($event, order)"
+          (pointermove)="onPointerMove($event, order)"
+          (pointerup)="onPointerEnd($event, order)"
           (pointercancel)="onPointerEnd($event, order)">
 
           <!-- Order card header -->
@@ -79,9 +83,15 @@
           
 
           <!-- Order card footer -->
-          <div class="card-footer mt-auto">
+          <div class="card-footer mt-auto card-header d-flex justify-content-between align-items-center">
             <small class="text-muted d-block mb-2" (dblclick)="onCardDoubleClick(order)">
               Oprettet: {{ order.creationTime | date:'HH:mm' }}
+            </small>
+            <small
+              [class.text-muted]="!isOlderThanFiveMinutes(order)"
+              [class.text-danger]="isOlderThanFiveMinutes(order)"
+              [class.fw-bold]="isOlderThanFiveMinutes(order)">
+              {{ getElapsedMinutes(order) }}
             </small>
 
             @if (cardErrors().get(order.transactionId!); as cardError) {
