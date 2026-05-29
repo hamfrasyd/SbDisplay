@@ -70,3 +70,10 @@ steps:
       targetPath: 'SbDisplay.Tests/DatabaseScripts'
       artifact: 'DatabaseScripts'
       publishLocation: 'pipeline'
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Postman Collection artifact'
+    inputs:
+      targetPath: 'SbDisplay.Tests/Postman'
+      artifact: 'Postman'
+      publishLocation: 'pipeline'
