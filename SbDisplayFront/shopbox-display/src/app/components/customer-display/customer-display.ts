@@ -1,9 +1,5 @@
-import { Component, computed, signal, OnDestroy, ElementRef, ViewChild, AfterViewInit, NgZone, Inject, PLATFORM_ID, } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
-
-const LEFT_COLUMNS = 5;
-const RIGHT_COLUMNS = 3;
 
 @Component({
   selector: 'app-customer-display',
@@ -12,53 +8,46 @@ const RIGHT_COLUMNS = 3;
   styleUrl: './customer-display.css',
 })
 export class CustomerDisplay implements AfterViewInit, OnDestroy {
+  private readonly orderDisplayState = inject(OrderDisplayStateService);
+  private readonly ngZone = inject(NgZone);
 
-  private leftVisibleCount = signal<number>(LEFT_COLUMNS * 3);
-  private rightVisibleCount = signal<number>(RIGHT_COLUMNS * 2);
+  private readonly leftColumnsPerRow = 5;
+  private readonly rightColumnsPerRow = 3;
+  private readonly initialLeftVisibleRowCount = 3;
+  private readonly initialRightVisibleRowCount = 2;
+  private readonly gridGapPixels = 24;
+  // When no item is rendered yet, assume this many rows fit to estimate item height.
+  private readonly assumedVisibleRowCountForHeightEstimate = 3;
+  // Fallback row count used when item height can't be measured.
+  private readonly fallbackVisibleRowCount = 2;
+
+  private readonly leftVisibleCount = signal<number>(this.leftColumnsPerRow * this.initialLeftVisibleRowCount);
+  private readonly rightVisibleCount = signal<number>(this.rightColumnsPerRow * this.initialRightVisibleRowCount);
 
   // ---- Left column (Tilbereder) ----
-  public leftVisible = computed(() =>
+  protected readonly leftVisible = computed(() =>
     this.orderDisplayState.preparingOrders().slice(0, this.leftVisibleCount())
   );
-  public leftOverflow = computed(() =>
+  protected readonly leftOverflow = computed(() =>
     this.orderDisplayState.preparingOrders().slice(this.leftVisibleCount())
   );
-  public hasLeftOverflow = computed(() => this.leftOverflow().length > 0);
+  protected readonly hasLeftOverflow = computed(() => this.leftOverflow().length > 0);
 
   // ---- Right column (Afhent) ----
-  public rightVisible = computed(() =>
+  protected readonly rightVisible = computed(() =>
     this.orderDisplayState.readyForPickupOrders().slice(0, this.rightVisibleCount())
   );
-  public rightOverflow = computed(() =>
+  protected readonly rightOverflow = computed(() =>
     this.orderDisplayState.readyForPickupOrders().slice(this.rightVisibleCount())
   );
-  public hasRightOverflow = computed(() => this.rightOverflow().length > 0);
+  protected readonly hasRightOverflow = computed(() => this.rightOverflow().length > 0);
 
-  @ViewChild('leftGrid') leftGridRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('rightGrid') rightGridRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('leftGrid') private leftGridRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('rightGrid') private rightGridRef!: ElementRef<HTMLDivElement>;
 
-  // Mark as optional (?) so ngOnDestroy is safe even when the observer was
-  // never created (i.e. during SSR where we skip the browser block entirely)
   private resizeObserver?: ResizeObserver;
 
-  constructor(
-    public orderDisplayState: OrderDisplayStateService,
-    private ngZone: NgZone,
-    // FIX: Inject PLATFORM_ID so we can check whether we're running in a
-    // browser or on the server before touching any browser-only APIs.
-    @Inject(PLATFORM_ID) private platformId: object
-  ) {}
-
   ngAfterViewInit(): void {
-    // FIX: This guard is the direct fix for "ResizeObserver is not defined".
-    // Angular Universal (SSR) runs ngAfterViewInit on the server too, but
-    // Node.js has no ResizeObserver, no DOM, no clientHeight — nothing.
-    // isPlatformBrowser() returns false on the server so we exit immediately.
-    // The browser hydration picks up normally after this.
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
     this.recalculateVisibleCounts();
 
     this.resizeObserver = new ResizeObserver(() => {
@@ -77,31 +66,29 @@ export class CustomerDisplay implements AfterViewInit, OnDestroy {
 
   private recalculateVisibleCounts(): void {
     this.leftVisibleCount.set(
-      this.calcVisibleCount(this.leftGridRef.nativeElement, LEFT_COLUMNS, 24)
+      this.calculateVisibleCount(this.leftGridRef.nativeElement, this.leftColumnsPerRow)
     );
     this.rightVisibleCount.set(
-      this.calcVisibleCount(this.rightGridRef.nativeElement, RIGHT_COLUMNS, 24)
+      this.calculateVisibleCount(this.rightGridRef.nativeElement, this.rightColumnsPerRow)
     );
   }
 
-  private calcVisibleCount(
-    gridEl: HTMLElement,
-    columnsPerRow: number,
-    gap: number
-  ): number {
-    const gridHeight = gridEl.clientHeight;
-    const firstItem = gridEl.querySelector('.queue-item, .current') as HTMLElement | null;
+  private calculateVisibleCount(gridElement: HTMLElement, columnsPerRow: number): number {
+    const gridHeight = gridElement.clientHeight;
+    const firstItem = gridElement.querySelector('.queue-item, .current') as HTMLElement | null;
 
     let itemHeight: number;
     if (firstItem) {
-      itemHeight = firstItem.offsetHeight + gap;
+      itemHeight = firstItem.offsetHeight + this.gridGapPixels;
     } else {
-      itemHeight = Math.floor(gridHeight / 3);
+      itemHeight = Math.floor(gridHeight / this.assumedVisibleRowCountForHeightEstimate);
     }
 
-    if (itemHeight <= 0) return columnsPerRow * 2;
+    if (itemHeight <= 0) {
+      return columnsPerRow * this.fallbackVisibleRowCount;
+    }
 
-    const rowsFit = Math.floor(gridHeight / itemHeight);
-    return Math.max(columnsPerRow, rowsFit * columnsPerRow);
+    const rowsThatFit = Math.floor(gridHeight / itemHeight);
+    return Math.max(columnsPerRow, rowsThatFit * columnsPerRow);
   }
 }

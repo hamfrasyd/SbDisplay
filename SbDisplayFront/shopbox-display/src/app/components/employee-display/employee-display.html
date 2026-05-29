@@ -2,6 +2,13 @@
 <div class="employee-tab-bar">
   <div class="container-fluid">
 
+    <!-- Initial load error -->
+    @if (initialLoadErrorMessage(); as loadError) {
+    <div class="alert alert-danger mb-0 mt-2" role="alert">
+      <span>{{ loadError }}</span>
+    </div>
+    }
+
     <!-- Page error message -->
     @if (pageLevelErrorMessage(); as error) {
     <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2"
