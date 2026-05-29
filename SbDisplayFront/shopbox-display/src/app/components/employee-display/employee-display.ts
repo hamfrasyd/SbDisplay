@@ -491,7 +491,7 @@ export class EmployeeDisplay {
     }
 
     /**
-     * Sends a status update to the store and surfaces success/failure on the card.
+     * Sends a status update to the OrderDisplayStateService and surfaces success/failure on the card.
      * @param order The order to update.
      * @param newOrderStatus The status to move the order to.
      * @remarks Guards against a missing transactionId, then subscribes: clears the card error on

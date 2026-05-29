@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
  * - Opens the connection to the backend hub
  * - and forwards incoming hub events onto typed RxJS streams.
  *
- * @remarks It holds no state and does no filtering. The store (OrderDisplayStateService)
+ * @remarks It holds no state and does no filtering. The OrderDisplayStateService
  * subscribes to these streams and folds the orders into its own signal state.
  * @remarks providedIn: 'root' means this service is a singleton and can be injected anywhere.
  */
