@@ -1,0 +1,81 @@
+{
+	"info": {
+		"_postman_id": "c278a17a-a611-46ec-9ca9-344a5c067571",
+		"name": "ShopboxIntegrationTestScript",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42616685"
+	},
+	"item": [
+		{
+			"name": "200OK",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response is JSON\", function () {\r",
+							"    pm.response.to.have.header(\"Content-Type\", \"application/json; charset=utf-8\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Returns exactly 3 orders\", function () {\r",
+							"    const orders = pm.response.json();\r",
+							"    pm.expect(orders).to.be.an(\"array\").with.lengthOf(3);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"First order matches seeded data\", function () {\r",
+							"    const orders = pm.response.json();\r",
+							"    const order = orders.find(o => o.transactionId === 1);\r",
+							"\r",
+							"    pm.expect(order).to.not.be.undefined;\r",
+							"    pm.expect(order.orderId).to.eql(101);\r",
+							"    pm.expect(order.statusId).to.eql(1);\r",
+							"    pm.expect(order.creationTimeUnix).to.eql(1700000000);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Second order matches seeded data\", function () {\r",
+							"    const orders = pm.response.json();\r",
+							"    const order = orders.find(o => o.transactionId === 2);\r",
+							"\r",
+							"    pm.expect(order).to.not.be.undefined;\r",
+							"    pm.expect(order.orderId).to.eql(102);\r",
+							"    pm.expect(order.statusId).to.eql(2);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Third order matches seeded data\", function () {\r",
+							"    const orders = pm.response.json();\r",
+							"    const order = orders.find(o => o.transactionId === 3);\r",
+							"\r",
+							"    pm.expect(order).to.not.be.undefined;\r",
+							"    pm.expect(order.orderId).to.eql(103);\r",
+							"    pm.expect(order.statusId).to.eql(3);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http:localhost:5000/api/Orders",
+					"host": [
+						"http:localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"Orders"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
