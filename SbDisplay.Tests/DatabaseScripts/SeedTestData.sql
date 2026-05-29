@@ -9,9 +9,9 @@ DELETE FROM dbo.TestOrderStatus;
 
 -- OrderStatus (skal indsættes før Orders pga. FK)
 INSERT INTO dbo.OrderStatus (StatusId, Name) VALUES
-    (1, 'Pending'),
-    (2, 'Completed'),
-    (3, 'Cancelled');
+    (1, 'Under Preparation'),
+    (2, 'Ready For Pickup'),
+    (3, 'Completed');
 
 
 -- Items
