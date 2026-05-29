@@ -26,7 +26,7 @@ namespace SbDisplayLib.Converters
                 Items = new List<OrderItem>()
             };
 
-            foreach (BasketItemDto basketItem in data.basket_items)
+            foreach (BasketItemDto basketItem in data.basket_items ?? [])
             {
                 order.Items.Add(new OrderItem()
                 {

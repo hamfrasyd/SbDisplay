@@ -13,10 +13,11 @@ pool:
 
 steps:
   - task: UseDotNet@2
-    displayName: 'Install .NET 8 SDK'
+    displayName: 'Install .NET 10 SDK'
     inputs:
       packageType: 'sdk'
-      version: '8.0.x'
+      version: '10.x'
+      includePreviewVersions: false
 
   - task: DotNetCoreCLI@2
     displayName: 'Restore NuGet packages'
@@ -35,7 +36,7 @@ steps:
     displayName: 'Run tests with code coverage'
     inputs:
       command: 'test'
-      projects: 'SbDisplayTests/SbDisplayTests.csproj'
+      projects: 'SbDisplay.Tests/SbDisplay.Tests.csproj'
       arguments: >
         --configuration $(buildConfiguration)
         --no-build
@@ -62,4 +63,18 @@ steps:
     inputs:
       targetPath: '$(publishOutput)'
       artifact: 'SbDisplayApi'
+      publishLocation: 'pipeline'
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Database Scripts artifact'
+    inputs:
+      targetPath: 'SbDisplay.Tests/DatabaseScripts'
+      artifact: 'DatabaseScripts'
+      publishLocation: 'pipeline'
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Postman Collection artifact'
+    inputs:
+      targetPath: 'SbDisplay.Tests/Postman'
+      artifact: 'Postman'
       publishLocation: 'pipeline'
