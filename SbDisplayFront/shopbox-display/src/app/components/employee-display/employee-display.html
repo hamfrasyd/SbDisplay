@@ -3,11 +3,11 @@
   <div class="container-fluid">
 
     <!-- Page error message -->
-    @if (pageError(); as error) {
+    @if (pageLevelErrorMessage(); as error) {
     <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2"
       role="alert">
       <span>{{ error }}</span>
-      <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+      <button type="button" class="btn-close" (click)="clearPageLevelErrorMessage()" aria-label="Close"></button>
     </div>
     }
 
@@ -15,15 +15,15 @@
     <div class="tab-bar-row">
       <ul class="nav nav-tabs border-0">
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Received"
-            (click)="setActiveTab(employeeTab.Received)">
+          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Received"
+            (click)="setActiveEmployeeTab(employeeTabEnum.Received)">
             Modtaget
             <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
           </button>
         </li>
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeTab() === employeeTab.Completed"
-            (click)="setActiveTab(employeeTab.Completed)">
+          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Completed"
+            (click)="setActiveEmployeeTab(employeeTabEnum.Completed)">
             Færdig
             <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
           </button>
@@ -43,7 +43,7 @@
 
   <!-- Currently displayed orders grid — independent column stacks so expanding one card only affects its own column -->
   <div class="order-columns-grid">
-    @for (col of ordersInColumns(); track $index) {
+    @for (col of ordersDistributedIntoResponsiveColumns(); track $index) {
     <div class="order-column">
       @for (order of col; track order.transactionId) {
 
@@ -51,7 +51,7 @@
       <div class="order-swipe-container">
 
         <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
-        @if (isSwipeable(order)) {
+        @if (isOrderSwipeable(order)) {
         <div class="order-swipe-indicator">
           <span>← Tilbage til tilberedning</span>
         </div>
@@ -59,26 +59,26 @@
 
               <!-- Order card -->
       <div class="card order-card d-flex flex-column"
-          [class.order-card-too-old]="isOlderThanFiveMinutes(order) && order.status !== orderStatus.ReadyForPickup && order.status !== orderStatus.Completed"
-          [class.order-card-ready]="order.status === orderStatus.ReadyForPickup"
-          [class.order-card-completed]="order.status === orderStatus.Completed"
-          [class.order-card-expanded]="isCardExpanded(order)" [class.order-card-swipeable]="isSwipeable(order)"
-          [class.order-card-swiping]="isCurrentlySwiping(order)" [style.transform]="getSwipeTransform(order)"
-          (pointerdown)="onPointerDown($event, order)" (pointermove)="onPointerMove($event, order)"
-          (pointerup)="onPointerEnd($event, order)" (pointercancel)="onPointerEnd($event, order)">
+          [class.order-card-too-old]="isOrderOlderThanFiveMinutes(order) && order.status !== orderStatusEnum.ReadyForPickup && order.status !== orderStatusEnum.Completed"
+          [class.order-card-ready]="order.status === orderStatusEnum.ReadyForPickup"
+          [class.order-card-completed]="order.status === orderStatusEnum.Completed"
+          [class.order-card-expanded]="isOrderCardExpanded(order)" [class.order-card-swipeable]="isOrderSwipeable(order)"
+          [class.order-card-swiping]="isOrderCurrentlySwiping(order)" [style.transform]="getSwipeTransformStyle(order)"
+          (pointerdown)="onSwipePointerDown($event, order)" (pointermove)="onSwipePointerMove($event, order)"
+          (pointerup)="onSwipePointerEnd($event, order)" (pointercancel)="onSwipePointerEnd($event, order)">
 
           <!-- Order card header -->
           <div class="card-header d-flex justify-content-between align-items-center"
-            (dblclick)="onCardDoubleClick(order)">
+            (dblclick)="onOrderCardDoubleClick(order)">
             <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
             <small class="text-muted">{{ order.status ?? 'N/A' }}</small>
           </div>
 
           <!-- Order card body -->
-          <div class="card-body order-card-body" (dblclick)="onCardDoubleClick(order)">
+          <div class="card-body order-card-body" (dblclick)="onOrderCardDoubleClick(order)">
             @if (order.items?.length) {
             <ul class="list-group list-group-flush">
-              @for (orderItem of visibleItems(order); track orderItem.item?.id) {
+              @for (orderItem of getVisibleOrderItems(order); track orderItem.item?.id) {
               <li class="list-group-item px-0 py-1 border-0 bg-transparent">
                 <span class="badge bg-secondary me-2">
                   {{ orderItem.quantity }}x
@@ -87,9 +87,9 @@
               </li>
               }
             </ul>
-            @if (hiddenItemCount(order) > 0 || isCardExpanded(order)) {
-            <button type="button" class="order-items-toggle mt-2" (click)="toggleCardExpanded(order, $event)">
-              @if (isCardExpanded(order)) {
+            @if (getHiddenOrderItemCount(order) > 0 || isOrderCardExpanded(order)) {
+            <button type="button" class="order-items-toggle mt-2" (click)="toggleOrderCardExpanded(order, $event)">
+              @if (isOrderCardExpanded(order)) {
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
                 class="bi bi-hand-index me-1" viewBox="0 0 16 16" style="transform: rotate(180deg)">
                 <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>              </svg>
@@ -100,7 +100,7 @@
                 <path
                   d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
               </svg>
-              Vis flere vare +{{ hiddenItemCount(order) }}
+              Vis flere vare +{{ getHiddenOrderItemCount(order) }}
               }
             </button>
             }
@@ -111,31 +111,31 @@
 
           <!-- Order card footer -->
           <div class="card-footer mt-auto card-header d-flex justify-content-between align-items-center">
-            <small class="text-muted d-block mb-2" (dblclick)="onCardDoubleClick(order)">
+            <small class="text-muted d-block mb-2" (dblclick)="onOrderCardDoubleClick(order)">
               Oprettet: {{ order.creationTime | date:'HH:mm' }}
             </small>
             <small
-              [class.text-muted]="!isOlderThanFiveMinutes(order)"
-              [class.text-danger]="isOlderThanFiveMinutes(order)"
-              [class.fw-bold]="isOlderThanFiveMinutes(order)">
-              {{ getElapsedMinutes(order) }}
+              [class.text-muted]="!isOrderOlderThanFiveMinutes(order)"
+              [class.text-danger]="isOrderOlderThanFiveMinutes(order)"
+              [class.fw-bold]="isOrderOlderThanFiveMinutes(order)">
+              {{ getElapsedMinutesSinceOrderCreationLabel(order) }}
             </small>
 
-            @if (cardErrors().get(order.transactionId!); as cardError) {
+            @if (errorMessageByOrderTransactionId().get(order.transactionId!); as cardError) {
             <div class="alert alert-danger mt-2 mb-0 py-2 small">
               {{ cardError }}
             </div>
             }
 
             <!-- Status change buttons (Completed tab only) -->
-            @if (order.status === orderStatus.Completed) {
+            @if (order.status === orderStatusEnum.Completed) {
             <div class="d-flex justify-content-between gap-2">
               <button type="button" class="btn btn order-btn-prep"
-                (click)="onChangeStatus(order, orderStatus.UnderPreparation)">
+                (click)="onChangeOrderStatus(order, orderStatusEnum.UnderPreparation)">
                 Under tilberedning
               </button>
               <button type="button" class="btn btn order-btn-ready"
-                (click)="onChangeStatus(order, orderStatus.ReadyForPickup)">
+                (click)="onChangeOrderStatus(order, orderStatusEnum.ReadyForPickup)">
                 Klar til afhentning
               </button>
             </div>
