@@ -6,8 +6,8 @@ import { Order, OrderStatus } from '../../generated/orders';
 import { DatePipe } from '@angular/common';
 
 enum EmployeeTab {
-  Received = 'Received',
-  Completed = 'completed'
+    Received = 'Received',
+    Completed = 'completed'
 }
 
 @Component({
