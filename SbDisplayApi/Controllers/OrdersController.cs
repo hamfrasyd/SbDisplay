@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
 using SbDisplayApi.SignalR.Hubs;
 using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Enums;
 using SbDisplayLib.Handlers;
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Models;
-using SbDisplayLib.Repositories;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -52,10 +48,10 @@ namespace SbDisplayApi.Controllers
         // PUT api/<OrdersController>/5
         [HttpPut]
         [Route("{transactionId}", Name = "UpdateOrderStatus")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ChangeOrderStatus(int transactionId, [FromBody] UpdateOrderStatusRequest request)
         {
             
