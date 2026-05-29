@@ -1,14 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Data.SqlClient;
 using SbDisplayApi.DTOs;
 using SbDisplayApi.SignalR.Hubs;
-using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Enums;
 using SbDisplayLib.Handlers;
-using SbDisplayLib.Interfaces;
-using SbDisplayLib.Models;
-using SbDisplayLib.Repositories;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
