@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 using SbDisplayApi.DTOs;
 using SbDisplayApi.SignalR.Hubs;
+using SbDisplayLib.EnumHelpers;
 using SbDisplayLib.Enums;
 using SbDisplayLib.Handlers;
 
@@ -28,9 +29,9 @@ namespace SbDisplayApi.Controllers
 
         // GET: api/<OrdersController>
         [HttpGet(Name = "GetAllOrders")]
-        //[ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
-        //[ProducesResponseType(StatusCodes.Status204NoContent)]
-        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(List<Order>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public IActionResult Get()
         {
             var result = _getAllOrdersHandler.Execute();

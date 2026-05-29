@@ -32,4 +32,10 @@
 		<Using Include="Xunit" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <None Update="DatabaseScripts\SeedTestData.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
