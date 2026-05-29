@@ -65,14 +65,10 @@
 				"header": [],
 				"url": {
 					"raw": "http://localhost:5000/api/Orders",
-					"host": [
-						"http:localhost"
-					],
+					"protocol": "http",
+					"host": [ "localhost" ],
 					"port": "5000",
-					"path": [
-						"api",
-						"Orders"
-					]
+					"path": [ "api", "Orders" ]
 				}
 			},
 			"response": []
