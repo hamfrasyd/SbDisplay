@@ -1,4 +1,6 @@
-import { Component, computed, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { fromEvent, map, startWith } from 'rxjs';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { Order, OrderStatus } from '../../generated/orders';
 import { DatePipe } from '@angular/common';
@@ -21,6 +23,31 @@ export class EmployeeDisplay {
     public readonly activeTab = signal<EmployeeTab>(EmployeeTab.Received);
     public readonly cardErrors = signal<Map<number, string>>(new Map());
     public readonly pageError = signal<string | null>(null);
+    public readonly expandedCards = signal<Set<number>>(new Set());
+
+    private readonly ITEMS_PREVIEW_COUNT = 4;
+
+    private readonly columnCount = toSignal(
+        fromEvent(window, 'resize').pipe(
+            startWith(null),
+            map((): number => {
+                const w = window.innerWidth;
+                if (w >= 1200) return 4;
+                if (w >= 992) return 3;
+                if (w >= 768) return 2;
+                return 1;
+            })
+        ),
+        { initialValue: 4 }
+    );
+
+    public readonly ordersInColumns = computed(() => {
+        const orders = this.currentlyDisplayedOrders();
+        const n = this.columnCount() ?? 4;
+        const columns: Order[][] = Array.from({ length: n }, () => []);
+        orders.forEach((order, i) => columns[i % n].push(order));
+        return columns;
+    });
 
     // Swipe state - only one card can be swiped at a time.
     // pendingSwipeTransactionId is a plain field (not a signal) intentionally:
@@ -49,7 +76,36 @@ export class EmployeeDisplay {
         return this.completedOrders();
     });
 
-    constructor(public orderDisplayState: OrderDisplayStateService) { }
+    public readonly now = signal(Date.now());
+
+    constructor(public orderDisplayState: OrderDisplayStateService, private cdr: ChangeDetectorRef) { 
+        setInterval(() => {
+            this.now.set(Date.now());
+            this.cdr.detectChanges();
+        }, 60000);
+    }
+
+    public getElapsedMinutes(order: Order): string {
+    if (!order.creationTime) {
+        return '0 min';
+    }
+
+    const createdAt = new Date(order.creationTime).getTime();
+    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+
+    return `${minutes} min`;
+}
+
+public isOlderThanFiveMinutes(order: Order): boolean {
+    if (!order.creationTime) {
+        return false;
+    }
+
+    const createdAt = new Date(order.creationTime).getTime();
+    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+
+    return minutes >= 5;
+}
 
     public setActiveTab(tab: EmployeeTab): void {
         this.activeTab.set(tab);
@@ -81,6 +137,35 @@ export class EmployeeDisplay {
 
     public isCurrentlySwiping(order: Order): boolean {
         return this.swipingTransactionId() === order.transactionId;
+    }
+
+    public isCardExpanded(order: Order): boolean {
+        return order.transactionId != null && this.expandedCards().has(order.transactionId);
+    }
+
+    public toggleCardExpanded(order: Order, event: Event): void {
+        event.stopPropagation();
+        const id = order.transactionId;
+        if (id == null) return;
+
+        const next = new Set(this.expandedCards());
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        this.expandedCards.set(next);
+    }
+
+    public visibleItems(order: Order) {
+        if (!order.items?.length) return [];
+        if (this.isCardExpanded(order)) return order.items;
+        return order.items.slice(0, this.ITEMS_PREVIEW_COUNT);
+    }
+
+    public hiddenItemCount(order: Order): number {
+        if (!order.items?.length) return 0;
+        return Math.max(0, order.items.length - this.ITEMS_PREVIEW_COUNT);
     }
 
     public getSwipeTransform(order: Order): string | null {
