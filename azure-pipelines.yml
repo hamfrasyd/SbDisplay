@@ -37,11 +37,19 @@ steps:
     inputs:
       command: 'test'
       projects: 'SbDisplay.Tests/SbDisplay.Tests.csproj'
-      arguments: >
-        --configuration $(buildConfiguration)
-        --no-restore--collect:"XPlat Code Coverage"
-        --results-directory $(Agent.TempDirectory)/TestResults
-      publishTestResults: true
+      arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+      publishTestResults: false
+
+  - task: PublishTestResults@2
+    displayName: 'Publish test results'
+    inputs:
+      testResultsFormat: 'VSTest'
+      testResultsFiles: '$(Agent.TempDirectory)/TestResults/**/*.trx'
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish code coverage'
+    inputs:
+      summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
 
   - task: PublishCodeCoverageResults@2
     displayName: 'Publish code coverage'
