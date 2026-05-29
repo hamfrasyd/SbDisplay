@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Interfaces;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Handlers
@@ -27,26 +28,38 @@ namespace SbDisplayLib.Handlers
         /// </summary>
         /// <param name="transactionId">The unique identifier for the transaction associated with the new order, used to fetch order details from the ShopBox API.</param>
         /// <returns>An Order object representing the newly created order in the database, populated with data retrieved from the ShopBox API.</returns>
-        public async Task<Order> Execute(int transactionId) 
+        public async Task<Result<Order>>Execute(int transactionId) 
         {
             // Henter ordredata fra ShopBox Api via transactionId
-            Order order = await _orderApiClient.GetOrderAsync(transactionId);
+            var orderResult = await _orderApiClient.GetOrderAsync(transactionId);
+            if (!orderResult.TryGetValue(out var order))
+            {
+                return orderResult;
+            }
 
-
-            // Oprettet ny Order i vores database ud fra det hentede data
-            _orderRepository.Create(order);
+            // Opretter ny Order i vores database ud fra det hentede data
+            var createResult = _orderRepository.Create(order);
+            if (!createResult.IsSuccess)
+            {  
+                return createResult; 
+            }
 
             // Opretter nye Items i databasen
             if (order.Items != null)
             {
-                foreach (OrderItem orderItem in order.Items)
+                foreach (var orderItem in order.Items)
                 {
-                    _itemRepository.Create(orderItem.Item);
-                    _orderRepository.CreateItemOrderRelation(order, orderItem);
+                    var itemResult = _itemRepository.Create(orderItem.Item);
+                    if (!itemResult.IsSuccess)
+                        return itemResult.PropagateFailure<Order>();
+
+                    var relationResult = _orderRepository.CreateItemOrderRelation(order, orderItem);
+                    if (!relationResult.IsSuccess)
+                        return relationResult.PropagateFailure<Order>();
                 }
             }
 
-            return order;
+            return Result<Order>.Ok(order);
         }
     }
 }

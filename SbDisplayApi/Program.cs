@@ -19,6 +19,7 @@ namespace SbDisplayApi
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IItemRepository, ItemRepository>();
             builder.Services.AddScoped<GetAllOrdersHandler>();
+            builder.Services.AddScoped<ChangeOrderStatusHandler>();
 
             builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
             {
@@ -35,8 +36,6 @@ namespace SbDisplayApi
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             // Registrerer SignalR i dependency injection containeren.
             // Det gør det muligt at bruge ShopboxHub og IHubContext<ShopboxHub> i controllers.
@@ -81,6 +80,12 @@ namespace SbDisplayApi
             // Mapper SignalR hub'en til en URL, som Angular kan forbinde til.
             // Denne route skal matche URL'en i signalr.service.ts.
             app.MapHub<ShopboxHub>("/SignalR/Hubs/ShopboxHub");
+
+            app.UseExceptionHandler(err => err.Run(async ctx =>
+            {
+                ctx.Response.StatusCode = 500;
+                await ctx.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });
+            }));
 
             app.MapControllers();
 
