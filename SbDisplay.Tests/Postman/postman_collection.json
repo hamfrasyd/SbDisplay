@@ -64,7 +64,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http:localhost:5000/api/Orders",
+					"raw": "http://localhost:5000/api/Orders",
 					"host": [
 						"http:localhost"
 					],
