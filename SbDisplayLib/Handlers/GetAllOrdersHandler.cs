@@ -1,4 +1,5 @@
-﻿using SbDisplayLib.Interfaces;
+﻿using SbDisplayLib.Common;
+using SbDisplayLib.Interfaces;
 using SbDisplayLib.Models;
 
 namespace SbDisplayLib.Handlers
@@ -6,25 +7,15 @@ namespace SbDisplayLib.Handlers
     public class GetAllOrdersHandler
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly IItemRepository _itemRepository;
 
-        public GetAllOrdersHandler(IOrderRepository orderRepository, IItemRepository itemRepository)
+        public GetAllOrdersHandler(IOrderRepository orderRepository)
         {
             _orderRepository = orderRepository;
-            _itemRepository = itemRepository;
         }
 
-        public List<Order> Execute()
+        public Result<List<Order>> Execute()
         {
-            //Henter alle ordrer fra databasen
-            List<Order> orders = _orderRepository.GetAll();
-
-            //henter items til hver ordre
-            foreach (Order order in orders)
-            {
-                order.Items = _itemRepository.GetByOrderTransactionId(order.TransactionId);
-            }
-            return orders;
+            return _orderRepository.GetAllWithItems();
         }
     }
 }
