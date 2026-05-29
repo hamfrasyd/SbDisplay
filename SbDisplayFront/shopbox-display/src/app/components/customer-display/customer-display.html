@@ -4,7 +4,7 @@
     <div class="queue" #leftGrid>
       @for (order of leftVisible(); track order.transactionId) {
         <div class="queue-item">
-          {{ order.id }}
+          <span>{{ order.id }}</span>
         </div>
       }
     </div>
@@ -35,7 +35,7 @@
     <div class="queue" #rightGrid>
       @for (order of rightVisible(); track order.transactionId) {
         <div class="current">
-          {{ order.id }}
+          <span>{{ order.id }}</span>
         </div>
       }
     </div>

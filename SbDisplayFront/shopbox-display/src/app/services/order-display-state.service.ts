@@ -29,7 +29,7 @@ export class OrderDisplayStateService {
         private signalRService: SignalRService,
         @Inject(PLATFORM_ID) platformId: object
     ) {
-        this.loadOrders();
+        this.loadAllOrders();
 
         // PLATFORM_ID fortæller om koden kører i browseren eller på serveren (SSR).
         // SignalR skal kun startes i browseren.. der er ingen rigtig klient at sende live-updates til under SSR.
@@ -39,7 +39,7 @@ export class OrderDisplayStateService {
         }
     }
 
-    private loadOrders(): void {
+    private loadAllOrders(): void {
         this.orderService.getAllOrders().subscribe({
             // next er den callback der håndterer det succesfulde svar fra backend. Lidt ligesom promise .then() i JavaScript.
             next: orders => {
@@ -70,16 +70,16 @@ export class OrderDisplayStateService {
         const currentOrders = this._orders();
 
     // TransactionId bruges som unik nøgle, fordi OrderId potentielt kan gentage sig.
-    const existingIndex = currentOrders.findIndex(
+    const existingOrderIndex = currentOrders.findIndex(
       order => order.transactionId === incomingOrder.transactionId
     );
 
-    if (existingIndex === -1) {
+    if (existingOrderIndex === -1) {
       // Order is genuinely new — append it
       this._orders.set([...currentOrders, incomingOrder]);
     } else {
       const updatedOrders = currentOrders.map((order, index) =>
-        index === existingIndex ? { ...order, ...incomingOrder } : order
+        index === existingOrderIndex ? { ...order, ...incomingOrder } : order
       );
       this._orders.set(updatedOrders);
     }
@@ -101,8 +101,8 @@ export class OrderDisplayStateService {
         this._orders.set(updatedOrders);
     }
 
-    public updateOrderStatus(transactionId: number, newStatus: UpdateOrderStatusRequest): Observable<Order> {
-        return this.orderService.updateOrderStatus(transactionId, newStatus).pipe(
+    public updateOrderStatus(transactionId: number, statusUpdateRequest: UpdateOrderStatusRequest): Observable<Order> {
+        return this.orderService.updateOrderStatus(transactionId, statusUpdateRequest).pipe(
             tap(updatedOrder => {
                 this.updateOrderStatusInList(updatedOrder);
             })

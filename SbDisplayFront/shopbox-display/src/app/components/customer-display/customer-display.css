@@ -74,7 +74,6 @@ html, body {
 .left .queue-item {
   background: gray;
   color: #ffffff;
-  font-size: 48px;
   font-weight: 800;
   width: calc((100% - 4 * 24px) / 5);
   flex-shrink: 0;
@@ -84,13 +83,18 @@ html, body {
   justify-content: center;
   border-radius: 12px;
   border: 1.5px solid #e8e8e8;
+  container-type: inline-size;
+}
+
+.left .queue-item span {
+  font-size: 40cqi;
+  line-height: 1;
 }
 
 /* ─── RIGHT: 3 per row ─── */
 .right .current {
   background: #3ab54a;
   color: #ffffff;
-  font-size: 64px;
   font-weight: 800;
   width: calc((100% - 2 * 24px) / 3);
   flex-shrink: 0;
@@ -100,6 +104,12 @@ html, body {
   justify-content: center;
   border-radius: 12px;
   letter-spacing: 2px;
+  container-type: inline-size;
+}
+
+.right .current span {
+  font-size: 40cqi;
+  line-height: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -250,13 +260,7 @@ html, body {
     font-size: 28px;
     margin-bottom: 24px;
   }
-  /* Items can be a bit smaller since horizontal space is abundant */
-  .left .queue-item {
-    font-size: 40px;
-  }
-  .right .current {
-    font-size: 56px;
-  }
+  /* Font scales automatically via cqi — no override needed */
   .ticker-wrapper {
     height: 64px;
   }
@@ -278,11 +282,9 @@ html, body {
     margin-bottom: 20px;
   }
   .left .queue-item {
-    font-size: 38px;
     border-radius: 10px;
   }
   .right .current {
-    font-size: 52px;
     border-radius: 10px;
   }
   .queue {
@@ -325,12 +327,10 @@ html, body {
     margin-bottom: 16px;
   }
   .left .queue-item {
-    font-size: 32px;
     width: calc((100% - 4 * 12px) / 5);
     border-radius: 8px;
   }
   .right .current {
-    font-size: 44px;
     width: calc((100% - 2 * 12px) / 3);
     border-radius: 8px;
   }
