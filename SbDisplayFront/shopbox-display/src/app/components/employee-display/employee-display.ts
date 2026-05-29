@@ -21,31 +21,31 @@ export class EmployeeDisplay {
     public readonly employeeTab = EmployeeTab;
 
     public readonly activeTab = signal<EmployeeTab>(EmployeeTab.Received);
-    public readonly cardErrors = signal<Map<number, string>>(new Map());
-    public readonly pageError = signal<string | null>(null);
-    public readonly expandedCards = signal<Set<number>>(new Set());
+    public readonly errorMessageByTransactionId = signal<Map<number, string>>(new Map());
+    public readonly pageErrorMessage = signal<string | null>(null);
+    public readonly expandedCardTransactionIds = signal<Set<number>>(new Set());
 
-    private readonly ITEMS_PREVIEW_COUNT = 4;
+    private readonly maxPreviewItemCount = 4;
 
-    private readonly columnCount = toSignal(
+    private readonly responsiveColumnCount = toSignal(
         fromEvent(window, 'resize').pipe(
             startWith(null),
             map((): number => {
-                const w = window.innerWidth;
-                if (w >= 1200) return 4;
-                if (w >= 992) return 3;
-                if (w >= 768) return 2;
+                const viewportWidthPixels = window.innerWidth;
+                if (viewportWidthPixels >= 1200) return 4;
+                if (viewportWidthPixels >= 992) return 3;
+                if (viewportWidthPixels >= 768) return 2;
                 return 1;
             })
         ),
         { initialValue: 4 }
     );
 
-    public readonly ordersInColumns = computed(() => {
-        const orders = this.currentlyDisplayedOrders();
-        const n = this.columnCount() ?? 4;
-        const columns: Order[][] = Array.from({ length: n }, () => []);
-        orders.forEach((order, i) => columns[i % n].push(order));
+    public readonly ordersDistributedIntoColumns = computed(() => {
+        const ordersToDisplay = this.currentlyDisplayedOrders();
+        const columnCount = this.responsiveColumnCount() ?? 4;
+        const columns: Order[][] = Array.from({ length: columnCount }, () => []);
+        ordersToDisplay.forEach((order, orderIndex) => columns[orderIndex % columnCount].push(order));
         return columns;
     });
 
@@ -53,13 +53,13 @@ export class EmployeeDisplay {
     // pendingSwipeTransactionId is a plain field (not a signal) intentionally:
     // updating a signal on every pointerdown triggers Angular re-renders mid-dblclick,
     // which breaks browser dblclick detection across all input types.
-    public readonly swipingTransactionId = signal<number | null>(null);
-    public readonly swipeDeltaX = signal<number>(0);
+    public readonly activeSwipeTransactionId = signal<number | null>(null);
+    public readonly swipeHorizontalOffsetPixels = signal<number>(0);
 
-    private swipeStartX: number = 0;
+    private swipeStartPointerX: number = 0;
     private pendingSwipeTransactionId: number | null = null;
-    private readonly swipeThresholdPixels: number = 100;
-    private readonly movementThresholdPixels: number = 5;
+    private readonly swipeRevertThresholdPixels: number = 100;
+    private readonly swipeActivationThresholdPixels: number = 5;
 
     public readonly receivedOrders = computed(() => {
         return this.orderDisplayState.orders().filter(order => order.status === OrderStatus.UnderPreparation || order.status === OrderStatus.ReadyForPickup);
@@ -76,24 +76,24 @@ export class EmployeeDisplay {
         return this.completedOrders();
     });
 
-    public readonly now = signal(Date.now());
+    public readonly currentTimestampMs = signal(Date.now());
 
     constructor(public orderDisplayState: OrderDisplayStateService, private cdr: ChangeDetectorRef) { 
         setInterval(() => {
-            this.now.set(Date.now());
+            this.currentTimestampMs.set(Date.now());
             this.cdr.detectChanges();
         }, 60000);
     }
 
-    public getElapsedMinutes(order: Order): string {
+    public getElapsedMinutesSinceCreation(order: Order): string {
     if (!order.creationTime) {
         return '0 min';
     }
 
-    const createdAt = new Date(order.creationTime).getTime();
-    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+    const creationTimestampMs = new Date(order.creationTime).getTime();
+    const elapsedMinutes = Math.floor((this.currentTimestampMs() - creationTimestampMs) / 1000 / 60);
 
-    return `${minutes} min`;
+    return `${elapsedMinutes} min`;
 }
 
 public isOlderThanFiveMinutes(order: Order): boolean {
@@ -101,34 +101,34 @@ public isOlderThanFiveMinutes(order: Order): boolean {
         return false;
     }
 
-    const createdAt = new Date(order.creationTime).getTime();
-    const minutes = Math.floor((this.now() - createdAt) / 1000 / 60);
+    const creationTimestampMs = new Date(order.creationTime).getTime();
+    const elapsedMinutes = Math.floor((this.currentTimestampMs() - creationTimestampMs) / 1000 / 60);
 
-    return minutes >= 5;
+    return elapsedMinutes >= 5;
 }
 
     public setActiveTab(tab: EmployeeTab): void {
         this.activeTab.set(tab);
     }
 
-    public clearPageError(): void {
-        this.pageError.set(null);
+    public clearPageErrorMessage(): void {
+        this.pageErrorMessage.set(null);
     }
 
     public onCardDoubleClick(order: Order): void {
         if (order.status === OrderStatus.UnderPreparation) {
-            this.setStatus(order, OrderStatus.ReadyForPickup);
+            this.requestOrderStatusUpdate(order, OrderStatus.ReadyForPickup);
             return;
         }
 
         if (order.status === OrderStatus.ReadyForPickup) {
-            this.setStatus(order, OrderStatus.Completed);
+            this.requestOrderStatusUpdate(order, OrderStatus.Completed);
             return;
         }
     }
 
     public onChangeStatus(order: Order, newStatus: OrderStatus): void {
-        this.setStatus(order, newStatus);
+        this.requestOrderStatusUpdate(order, newStatus);
     }
 
     public isSwipeable(order: Order): boolean {
@@ -136,43 +136,43 @@ public isOlderThanFiveMinutes(order: Order): boolean {
     }
 
     public isCurrentlySwiping(order: Order): boolean {
-        return this.swipingTransactionId() === order.transactionId;
+        return this.activeSwipeTransactionId() === order.transactionId;
     }
 
     public isCardExpanded(order: Order): boolean {
-        return order.transactionId != null && this.expandedCards().has(order.transactionId);
+        return order.transactionId != null && this.expandedCardTransactionIds().has(order.transactionId);
     }
 
     public toggleCardExpanded(order: Order, event: Event): void {
         event.stopPropagation();
-        const id = order.transactionId;
-        if (id == null) return;
+        const transactionId = order.transactionId;
+        if (transactionId == null) return;
 
-        const next = new Set(this.expandedCards());
-        if (next.has(id)) {
-            next.delete(id);
+        const updatedExpandedTransactionIds = new Set(this.expandedCardTransactionIds());
+        if (updatedExpandedTransactionIds.has(transactionId)) {
+            updatedExpandedTransactionIds.delete(transactionId);
         } else {
-            next.add(id);
+            updatedExpandedTransactionIds.add(transactionId);
         }
-        this.expandedCards.set(next);
+        this.expandedCardTransactionIds.set(updatedExpandedTransactionIds);
     }
 
-    public visibleItems(order: Order) {
+    public getVisibleOrderItems(order: Order) {
         if (!order.items?.length) return [];
         if (this.isCardExpanded(order)) return order.items;
-        return order.items.slice(0, this.ITEMS_PREVIEW_COUNT);
+        return order.items.slice(0, this.maxPreviewItemCount);
     }
 
-    public hiddenItemCount(order: Order): number {
+    public getHiddenItemCount(order: Order): number {
         if (!order.items?.length) return 0;
-        return Math.max(0, order.items.length - this.ITEMS_PREVIEW_COUNT);
+        return Math.max(0, order.items.length - this.maxPreviewItemCount);
     }
 
     public getSwipeTransform(order: Order): string | null {
-        if (this.swipingTransactionId() !== order.transactionId) {
+        if (this.activeSwipeTransactionId() !== order.transactionId) {
             return null;
         }
-        return `translateX(${this.swipeDeltaX()}px)`;
+        return `translateX(${this.swipeHorizontalOffsetPixels()}px)`;
     }
 
     public onPointerDown(event: PointerEvent, order: Order): void {
@@ -187,7 +187,7 @@ public isOlderThanFiveMinutes(order: Order): boolean {
         // Record start position only — no signal updates, no setPointerCapture.
         // Signals and capture are deferred to onPointerMove once horizontal movement is confirmed,
         // so that taps and dblclicks are completely unaffected by the swipe setup.
-        this.swipeStartX = event.clientX;
+        this.swipeStartPointerX = event.clientX;
         this.pendingSwipeTransactionId = order.transactionId;
     }
 
@@ -196,60 +196,60 @@ public isOlderThanFiveMinutes(order: Order): boolean {
             return;
         }
 
-        const deltaX = event.clientX - this.swipeStartX;
+        const horizontalOffsetPixels = event.clientX - this.swipeStartPointerX;
 
         // Commit to swipe only once horizontal movement is confirmed.
         // This is the first point where we update signals or capture the pointer.
-        if (this.swipingTransactionId() === null && Math.abs(deltaX) > this.movementThresholdPixels) {
-            this.swipingTransactionId.set(this.pendingSwipeTransactionId);
+        if (this.activeSwipeTransactionId() === null && Math.abs(horizontalOffsetPixels) > this.swipeActivationThresholdPixels) {
+            this.activeSwipeTransactionId.set(this.pendingSwipeTransactionId);
             (event.currentTarget as Element).setPointerCapture(event.pointerId);
         }
 
-        if (this.swipingTransactionId() !== null && deltaX < 0) {
-            this.swipeDeltaX.set(deltaX);
+        if (this.activeSwipeTransactionId() !== null && horizontalOffsetPixels < 0) {
+            this.swipeHorizontalOffsetPixels.set(horizontalOffsetPixels);
         }
     }
 
     public onPointerEnd(_event: PointerEvent, order: Order): void {
-        const wasActiveSwipe = this.swipingTransactionId() !== null;
-        const finalDeltaX = this.swipeDeltaX();
+        const hadActiveSwipe = this.activeSwipeTransactionId() !== null;
+        const finalHorizontalOffsetPixels = this.swipeHorizontalOffsetPixels();
 
         this.pendingSwipeTransactionId = null;
-        this.swipingTransactionId.set(null);
-        this.swipeDeltaX.set(0);
+        this.activeSwipeTransactionId.set(null);
+        this.swipeHorizontalOffsetPixels.set(0);
 
-        if (wasActiveSwipe && Math.abs(finalDeltaX) >= this.swipeThresholdPixels) {
-            this.setStatus(order, OrderStatus.UnderPreparation);
+        if (hadActiveSwipe && Math.abs(finalHorizontalOffsetPixels) >= this.swipeRevertThresholdPixels) {
+            this.requestOrderStatusUpdate(order, OrderStatus.UnderPreparation);
         }
     }
 
-    private setStatus(order: Order, newStatus: OrderStatus): void {
+    private requestOrderStatusUpdate(order: Order, newStatus: OrderStatus): void {
         const transactionId = order.transactionId;
 
         if (transactionId === undefined || transactionId === null) {
-            this.pageError.set('Kan ikke opdatere ordre uden transactionId.');
+            this.pageErrorMessage.set('Kan ikke opdatere ordre uden transactionId.');
             return;
         }
 
         this.orderDisplayState.updateOrderStatus(transactionId, { status: newStatus }).subscribe({
-            next: () => this.clearCardError(transactionId),
-            error: () => this.setCardError(transactionId, 'Kunne ikke opdatere status. Prøv igen.')
+            next: () => this.clearCardErrorMessage(transactionId),
+            error: () => this.setCardErrorMessage(transactionId, 'Kunne ikke opdatere status. Prøv igen.')
         });
     }
 
-    private setCardError(transactionId: number, message: string): void {
-        const next = new Map(this.cardErrors());
-        next.set(transactionId, message);
-        this.cardErrors.set(next);
+    private setCardErrorMessage(transactionId: number, message: string): void {
+        const updatedErrorMessagesByTransactionId = new Map(this.errorMessageByTransactionId());
+        updatedErrorMessagesByTransactionId.set(transactionId, message);
+        this.errorMessageByTransactionId.set(updatedErrorMessagesByTransactionId);
     }
 
-    private clearCardError(transactionId: number): void {
-        const current = this.cardErrors();
+    private clearCardErrorMessage(transactionId: number): void {
+        const currentErrorMessagesByTransactionId = this.errorMessageByTransactionId();
 
-        if (current.has(transactionId)) {
-            const next = new Map(current);
-            next.delete(transactionId);
-            this.cardErrors.set(next);
+        if (currentErrorMessagesByTransactionId.has(transactionId)) {
+            const updatedErrorMessagesByTransactionId = new Map(currentErrorMessagesByTransactionId);
+            updatedErrorMessagesByTransactionId.delete(transactionId);
+            this.errorMessageByTransactionId.set(updatedErrorMessagesByTransactionId);
         }
     }
 }

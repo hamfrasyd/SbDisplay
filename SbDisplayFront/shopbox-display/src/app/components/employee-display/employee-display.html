@@ -3,11 +3,11 @@
   <div class="container-fluid">
 
     <!-- Page error message -->
-    @if (pageError(); as error) {
+    @if (pageErrorMessage(); as error) {
     <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2"
       role="alert">
       <span>{{ error }}</span>
-      <button type="button" class="btn-close" (click)="clearPageError()" aria-label="Close"></button>
+      <button type="button" class="btn-close" (click)="clearPageErrorMessage()" aria-label="Close"></button>
     </div>
     }
 
@@ -43,7 +43,7 @@
 
   <!-- Currently displayed orders grid — independent column stacks so expanding one card only affects its own column -->
   <div class="order-columns-grid">
-    @for (col of ordersInColumns(); track $index) {
+    @for (col of ordersDistributedIntoColumns(); track $index) {
     <div class="order-column">
       @for (order of col; track order.transactionId) {
 
@@ -78,7 +78,7 @@
           <div class="card-body order-card-body" (dblclick)="onCardDoubleClick(order)">
             @if (order.items?.length) {
             <ul class="list-group list-group-flush">
-              @for (orderItem of visibleItems(order); track orderItem.item?.id) {
+              @for (orderItem of getVisibleOrderItems(order); track orderItem.item?.id) {
               <li class="list-group-item px-0 py-1 border-0 bg-transparent">
                 <span class="badge bg-secondary me-2">
                   {{ orderItem.quantity }}x
@@ -87,7 +87,7 @@
               </li>
               }
             </ul>
-            @if (hiddenItemCount(order) > 0 || isCardExpanded(order)) {
+            @if (getHiddenItemCount(order) > 0 || isCardExpanded(order)) {
             <button type="button" class="order-items-toggle mt-2" (click)="toggleCardExpanded(order, $event)">
               @if (isCardExpanded(order)) {
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
@@ -100,7 +100,7 @@
                 <path
                   d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
               </svg>
-              Vis flere vare +{{ hiddenItemCount(order) }}
+              Vis flere vare +{{ getHiddenItemCount(order) }}
               }
             </button>
             }
@@ -118,10 +118,10 @@
               [class.text-muted]="!isOlderThanFiveMinutes(order)"
               [class.text-danger]="isOlderThanFiveMinutes(order)"
               [class.fw-bold]="isOlderThanFiveMinutes(order)">
-              {{ getElapsedMinutes(order) }}
+              {{ getElapsedMinutesSinceCreation(order) }}
             </small>
 
-            @if (cardErrors().get(order.transactionId!); as cardError) {
+            @if (errorMessageByTransactionId().get(order.transactionId!); as cardError) {
             <div class="alert alert-danger mt-2 mb-0 py-2 small">
               {{ cardError }}
             </div>
