@@ -42,10 +42,10 @@ export class EmployeeDisplay {
     );
 
     public readonly ordersDistributedIntoResponsiveColumns = computed(() => {
-        const ordersToDisplay = this.currentlyDisplayedOrders();
+        const ordersToDisplay: Order[] = this.currentlyDisplayedOrders();
         const responsiveColumnCount = this.responsiveOrderColumnCount() ?? 4;
         const orderColumns: Order[][] = Array.from({ length: responsiveColumnCount }, () => []);
-        ordersToDisplay.forEach((order, orderIndex) => orderColumns[orderIndex % responsiveColumnCount].push(order));
+        ordersToDisplay.forEach((order: Order, orderIndex: number) => orderColumns[orderIndex % responsiveColumnCount].push(order));
         return orderColumns;
     });
 
