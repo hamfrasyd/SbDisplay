@@ -63,3 +63,10 @@ steps:
       targetPath: '$(publishOutput)'
       artifact: 'SbDisplayApi'
       publishLocation: 'pipeline'
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Database Scripts artifact'
+    inputs:
+      targetPath: 'SbDisplay.Tests/DatabaseScripts'
+      artifact: 'DatabaseScripts'
+      publishLocation: 'pipeline'
