@@ -37,11 +37,7 @@ steps:
     inputs:
       command: 'test'
       projects: 'SbDisplay.Tests/SbDisplay.Tests.csproj'
-      arguments: >
-        --configuration $(buildConfiguration)
-        --no-build
-        --collect:"XPlat Code Coverage"
-        --results-directory $(Agent.TempDirectory)/TestResults
+      arguments: >--configuration $(buildConfiguration)--no-restore--collect:"XPlat Code Coverage"--results-directory $(Agent.TempDirectory)/TestResults
       publishTestResults: true
 
   - task: PublishCodeCoverageResults@2
