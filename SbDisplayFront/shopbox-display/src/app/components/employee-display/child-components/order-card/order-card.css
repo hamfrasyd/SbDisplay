@@ -1,0 +1,135 @@
+:host {
+  display: block;
+}
+
+.order-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  touch-action: manipulation;
+  height: 20rem;
+}
+
+.order-card-expanded {
+  height: auto;
+  min-height: 20rem;
+}
+
+.order-card-body {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.order-card:not(.order-card-completed):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.order-card-ready {
+  border-color: #3ab54a;
+  border-width: 2px;
+  background-color: #d1e7dd;
+}
+
+.order-card-completed {
+  background-color: #f8f9fa;
+}
+
+.order-card-completed .order-card-body {
+  cursor: default;
+}
+
+/* Expanded card: allow body to show all content */
+.order-card-expanded .order-card-body {
+  overflow: visible;
+}
+
+/* Swipe-to-revert support */
+
+.order-swipe-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.375rem;
+}
+
+.order-swipe-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #fde68a;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 1.5rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  pointer-events: none;
+}
+
+.order-card-swipeable {
+  touch-action: pan-y;
+  position: relative;
+  z-index: 1;
+}
+
+/* Disable transition while actively dragging so the card tracks the finger 1:1 */
+.order-card.order-card-swiping {
+  transition: none;
+}
+
+/* Show-more / show-less toggle in card body */
+.order-items-toggle {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 0;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: #3ab54a;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.order-items-toggle:hover {
+  color: #6cca78;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Status change buttons - custom palette */
+.order-btn-prep {
+  background-color: #fde68a;
+  border-color: #d97706;
+  color: #78350f;
+}
+
+.order-btn-prep:hover {
+  background-color: #fcd34d;
+  color: #78350f;
+}
+
+.order-btn-ready {
+  background-color: #a7f3d0;
+  border-color: #0E9E73;
+  color: #064e3b;
+}
+
+.order-btn-ready:hover {
+  background-color: #6ee7b7;
+  color: #064e3b;
+}
+
+.order-card-too-old {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+}
