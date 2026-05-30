@@ -14,7 +14,6 @@ describe('OrderCard', () => {
     fixture = TestBed.createComponent(OrderCard);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('order', { transactionId: 1 });
-    fixture.componentRef.setInput('currentTimestampMilliseconds', Date.now());
     await fixture.whenStable();
   });
 

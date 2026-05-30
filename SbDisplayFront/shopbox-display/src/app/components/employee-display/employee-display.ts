@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { fromEvent, map, startWith } from 'rxjs';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { Order, OrderStatus } from '../../generated/orders';
 import { OrderCard } from './child-components/order-card/order-card';
+import { ResponsiveOrderColumns } from './helpers/responsive-order-columns.service';
 
 /**
  * Local UI enum for the two tabs the employee can switch between.
@@ -18,6 +17,7 @@ enum EmployeeTab {
     selector: 'app-employee-display',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [OrderCard],
+    providers: [ResponsiveOrderColumns],
     templateUrl: './employee-display.html',
     styleUrl: './employee-display.css',
 })
@@ -29,6 +29,12 @@ export class EmployeeDisplay {
      * @remarks 'inject(...)' is the recommended way to inject services into components.
      */
     private readonly orderDisplayState = inject(OrderDisplayStateService);
+
+    /**
+     * Injects the ResponsiveOrderColumns service, which owns the viewport-driven column layout.
+     * @remarks Provided at the component level, so its resize listener only lives while this page is mounted.
+     */
+    private readonly responsiveOrderColumns = inject(ResponsiveOrderColumns);
     //#endregion
 
     //#region Enum aliases for the template
@@ -38,32 +44,6 @@ export class EmployeeDisplay {
      * @remarks Templates can't read imported symbols directly, so we alias the enum on a field.
      */
     protected readonly employeeTabEnum = EmployeeTab;
-    //#endregion
-
-    //#region Viewport breakpoints (pixels) and the column count each band renders
-
-    /** Minimum viewport width treated as an extra-large screen. */
-    private readonly extraLargeViewportMinimumWidthPixels = 1200;
-    /** Minimum viewport width treated as a large screen. */
-    private readonly largeViewportMinimumWidthPixels = 992;
-    /** Minimum viewport width treated as a medium screen. */
-    private readonly mediumViewportMinimumWidthPixels = 768;
-    /** Number of columns rendered on an extra-large viewport. */
-    private readonly columnCountForExtraLargeViewport = 4;
-    /** Number of columns rendered on a large viewport. */
-    private readonly columnCountForLargeViewport = 3;
-    /** Number of columns rendered on a medium viewport. */
-    private readonly columnCountForMediumViewport = 2;
-    /** Number of columns rendered on a small viewport. */
-    private readonly columnCountForSmallViewport = 1;
-    /** Fallback column count used before the first viewport measurement. */
-    private readonly defaultResponsiveColumnCount = 4;
-    //#endregion
-
-    //#region Order age constants
-
-    /** How often the order-age label is refreshed (milliseconds). */
-    private readonly orderAgeRefreshIntervalMilliseconds = 60000;
     //#endregion
 
     //#region UI state signals
@@ -79,13 +59,6 @@ export class EmployeeDisplay {
 
     /** A page-level error message shown above the board, or null when there is none. */
     protected readonly pageLevelErrorMessage = signal<string | null>(null);
-
-    /**
-     * The current time, refreshed on an interval.
-     * @remarks Stored as a signal so the order-age labels recompute when it changes; passed down to
-     * each card so a single interval drives every card's age.
-     */
-    protected readonly currentTimestampMilliseconds = signal(Date.now());
     //#endregion
 
     //#region State aliased from the OrderDisplayStateService
@@ -98,31 +71,6 @@ export class EmployeeDisplay {
     //#endregion
 
     //#region Derived (computed) state
-
-    /**
-     * The number of columns to render, derived from the current viewport width.
-     * @remarks toSignal adapts the resize stream to a signal, startWith(null) makes it emit once
-     * immediately so the first render has a value.
-     */
-    private readonly responsiveOrderColumnCount = toSignal(
-        fromEvent(window, 'resize').pipe(
-            startWith(null),
-            map((): number => {
-                const viewportWidthPixels = window.innerWidth;
-                if (viewportWidthPixels >= this.extraLargeViewportMinimumWidthPixels) {
-                    return this.columnCountForExtraLargeViewport;
-                }
-                if (viewportWidthPixels >= this.largeViewportMinimumWidthPixels) {
-                    return this.columnCountForLargeViewport;
-                }
-                if (viewportWidthPixels >= this.mediumViewportMinimumWidthPixels) {
-                    return this.columnCountForMediumViewport;
-                }
-                return this.columnCountForSmallViewport;
-            })
-        ),
-        { initialValue: this.defaultResponsiveColumnCount }
-    );
 
     /**
      * Orders shown on the "Received" tab.
@@ -153,24 +101,13 @@ export class EmployeeDisplay {
 
     /**
      * The displayed orders split into columns for the responsive grid.
-     * @remarks Distributes orders round-robin across the column count so the columns stay balanced.
+     * @remarks Delegates the layout to the ResponsiveOrderColumns service; this recomputes on resize
+     * (it reads the service's column-count signal) and whenever the displayed orders change.
      */
     protected readonly ordersDistributedIntoResponsiveColumns = computed(() => {
-        const ordersToDisplay: Order[] = this.currentlyDisplayedOrders();
-        const responsiveColumnCount = this.responsiveOrderColumnCount() ?? this.defaultResponsiveColumnCount;
-        const orderColumns: Order[][] = Array.from({ length: responsiveColumnCount }, () => []);
-        ordersToDisplay.forEach((order: Order, orderIndex: number) => orderColumns[orderIndex % responsiveColumnCount].push(order));
-        return orderColumns;
+        return this.responsiveOrderColumns.distributeIntoColumns(this.currentlyDisplayedOrders());
     });
     //#endregion
-
-    constructor() {
-        // Refresh the "current time" signal on an interval so order-age labels stay up to date.
-        // The signal write marks this OnPush component dirty, no manual change detection needed.
-        setInterval(() => {
-            this.currentTimestampMilliseconds.set(Date.now());
-        }, this.orderAgeRefreshIntervalMilliseconds);
-    }
 
     //#region Tab and page-error handling
 

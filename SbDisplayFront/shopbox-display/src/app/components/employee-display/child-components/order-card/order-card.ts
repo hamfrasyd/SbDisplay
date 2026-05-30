@@ -1,11 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Order, OrderItem, OrderStatus } from '../../../../generated/orders';
+import { OrderTimeTracker } from '../../helpers/order-time-tracker.service';
+import { getNextOrderStatus, getPreviousOrderStatus } from '../../helpers/order-status-flow';
+import { OrderCardSwipe } from '../../helpers/order-card-swipe';
 
 /**
  * Presentational card for a single order.
- * @remarks Dumb component: it owns only its local swipe/expand UI state, takes the order and the
- * shared clock as inputs, and emits a resolved target status, the page performs the actual update.
+ * @remarks Dumb component: it owns its local expand state and a swipe controller, takes the order as
+ * input, and emits a resolved target status, the page performs the actual update. Time/age, the
+ * status-transition rules, and the swipe mechanics live in helpers it delegates to.
  */
 @Component({
     selector: 'app-order-card',
@@ -15,22 +19,35 @@ import { Order, OrderItem, OrderStatus } from '../../../../generated/orders';
     styleUrl: './order-card.css',
 })
 export class OrderCard {
+    //#region Injected dependencies
+
+    /**
+     * Injects the OrderTimeTracker, the shared clock and order-age math.
+     * @remarks 'inject(...)' is the recommended way to inject services into components.
+     */
+    private readonly orderTimeTracker = inject(OrderTimeTracker);
+    //#endregion
+
     //#region Inputs and outputs
 
-    /** The order this card renders. */
+    /**
+     * The order this card renders.
+     * @remarks input.required() is the signals-based required input (it replaces the @Input() decorator);
+     * the parent must bind it, and reading it as order() returns the current value.
+     */
     public readonly order = input.required<Order>();
 
     /**
-     * The current time in milliseconds, pushed from the page.
-     * @remarks Driven by a single interval on the page so every card recomputes its age off one clock.
+     * A card-level error message to show, or null when there is none.
+     * @remarks input() declares an optional input with a default value; the parent binds [errorMessage]
+     * and the card reads it as errorMessage().
      */
-    public readonly currentTimestampMilliseconds = input.required<number>();
-
-    /** A card-level error message to show, or null when there is none. */
     public readonly errorMessage = input<string | null>(null);
 
     /**
      * Emits the status this order should move to.
+     * @remarks output() is the signals-era event emitter (it replaces the @Output() decorator); the card
+     * calls statusChange.emit(...) and the parent listens with (statusChange)="...".
      * @remarks The card resolves the target status (double-tap advance, swipe-revert, explicit button),
      * the page owns the actual data-access call.
      */
@@ -46,59 +63,38 @@ export class OrderCard {
     protected readonly orderStatusEnum = OrderStatus;
     //#endregion
 
-    //#region Order preview and age constants
+    //#region Order preview constants
 
     /** How many order items to show on a collapsed card before showing "+N more". */
     private readonly maximumPreviewOrderItemCount = 4;
-    /** Age (minutes) at which an order is visually flagged as old. */
-    private readonly orderConsideredOldAfterMinutes = 5;
-    /** Conversion factor used to turn elapsed milliseconds into minutes. */
-    private readonly millisecondsPerMinute = 60000;
-    //#endregion
-
-    //#region Swipe gesture distance thresholds (pixels)
-
-    /**
-     * The user must drag the card left at least this far in pixels before releasing
-     * for the order to be sent back to preparation.
-     */
-    private readonly minimumDragDistanceToRevertOrderInPixels = 100;
-
-    /**
-     * The finger/mouse must move at least this far in pixels before we treat the gesture
-     * as a swipe instead of a tap/double-tap.
-     */
-    private readonly minimumDragDistanceToCountAsSwipeInPixels = 5;
     //#endregion
 
     //#region Local UI state signals
 
-    /** Whether this card is expanded to show all order items. */
+    /**
+     * Whether this card is expanded to show all order items.
+     * @remarks signal() holds writable reactive state; writing it (set/update) re-renders only the
+     * views that read it.
+     */
     protected readonly isCardExpanded = signal<boolean>(false);
-
-    /** Whether this card is currently being swiped. */
-    protected readonly isCardActivelySwiping = signal<boolean>(false);
-
-    /** How far the card has been dragged horizontally in pixels. */
-    protected readonly swipeHorizontalOffsetPixels = signal<number>(0);
     //#endregion
 
-    //#region Swipe gesture tracking (plain fields, intentionally not signals)
+    //#region Swipe gesture controller
 
     /**
-     * Where the finger/mouse first touched down (horizontal screen position),
-     * so we can measure how far it has dragged.
+     * Owns the swipe-to-revert gesture mechanics; the card resolves the revert target status.
+     * @remarks canSwipe gates the gesture to swipeable orders, onRevertRequested maps a completed
+     * swipe to the previous status in the lifecycle and emits it.
      */
-    private dragStartHorizontalScreenPositionInPixels = 0;
-
-    /**
-     * Whether a potential swipe is being evaluated, set on touch-down before we know
-     * it's a real swipe and not a tap.
-     * @remarks Kept as a plain field (not a signal) intentionally, updating a signal on every
-     * touch-down triggers re-renders mid-double-tap, which breaks browser double-tap detection
-     * across mouse, touch and pen input.
-     */
-    private isEvaluatingPotentialSwipe = false;
+    protected readonly cardSwipe = new OrderCardSwipe({
+        canSwipe: () => this.isOrderSwipeable(),
+        onRevertRequested: () => {
+            const previousOrderStatus = getPreviousOrderStatus(this.order().status);
+            if (previousOrderStatus !== null) {
+                this.statusChange.emit(previousOrderStatus);
+            }
+        }
+    });
     //#endregion
 
     //#region Order age helpers
@@ -108,15 +104,15 @@ export class OrderCard {
      * @returns A label like "3 min".
      */
     protected getElapsedMinutesSinceOrderCreationLabel(): string {
-        return `${this.getElapsedMinutesSinceOrderCreation()} min`;
+        return `${this.orderTimeTracker.getElapsedMinutesSinceOrderCreation(this.order())} min`;
     }
 
     /**
      * Whether the order is old enough to be visually flagged.
      * @returns true if the order is at least the "old" threshold in minutes.
      */
-    protected isOrderOlderThanFiveMinutes(): boolean {
-        return this.getElapsedMinutesSinceOrderCreation() >= this.orderConsideredOldAfterMinutes;
+    protected isOrderConsideredOld(): boolean {
+        return this.orderTimeTracker.isOrderConsideredOld(this.order());
     }
     //#endregion
 
@@ -128,16 +124,10 @@ export class OrderCard {
      * @returns void
      */
     protected onOrderCardDoubleClick(): void {
-        const order = this.order();
+        const nextOrderStatus = getNextOrderStatus(this.order().status);
 
-        if (order.status === OrderStatus.UnderPreparation) {
-            this.statusChange.emit(OrderStatus.ReadyForPickup);
-            return;
-        }
-
-        if (order.status === OrderStatus.ReadyForPickup) {
-            this.statusChange.emit(OrderStatus.Completed);
-            return;
+        if (nextOrderStatus !== null) {
+            this.statusChange.emit(nextOrderStatus);
         }
     }
 
@@ -167,6 +157,8 @@ export class OrderCard {
     /**
      * Toggles whether the card is expanded.
      * @param event The DOM event, its propagation is stopped so the card click doesn't also fire.
+     * @remarks update() derives the next value from the current one; '=== false' flips the boolean
+     * (we compare against the literal false because this is a genuine boolean, not a nullish check).
      * @returns void
      */
     protected toggleOrderCardExpanded(event: Event): void {
@@ -199,99 +191,6 @@ export class OrderCard {
             return 0;
         }
         return Math.max(0, order.items.length - this.maximumPreviewOrderItemCount);
-    }
-    //#endregion
-
-    //#region Swipe gesture handling
-
-    /**
-     * The CSS transform that visually offsets the card while it is being swiped.
-     * @returns A translateX(...) string while swiping, otherwise null.
-     */
-    protected getSwipeTransformStyle(): string | null {
-        if (this.isCardActivelySwiping() === false) {
-            return null;
-        }
-        return `translateX(${this.swipeHorizontalOffsetPixels()}px)`;
-    }
-
-    /**
-     * Records the start of a potential swipe on pointer-down.
-     * @param event The pointer event.
-     * @remarks Records start position only, no signal updates, no setPointerCapture. Signals and
-     * capture are deferred to onSwipePointerMove once horizontal movement is confirmed, so that
-     * taps and dblclicks are completely unaffected by the swipe setup.
-     * @returns void
-     */
-    protected onSwipePointerDown(event: PointerEvent): void {
-        if (this.isOrderSwipeable() === false) {
-            return;
-        }
-
-        this.dragStartHorizontalScreenPositionInPixels = event.clientX;
-        this.isEvaluatingPotentialSwipe = true;
-    }
-
-    /**
-     * Tracks pointer movement and, once confirmed, drives the swipe offset.
-     * @param event The pointer event.
-     * @remarks Commits to the swipe only once horizontal movement passes the threshold; that is the
-     * first point where we update signals or capture the pointer. The offset only follows leftward
-     * drags (negative offset).
-     * @returns void
-     */
-    protected onSwipePointerMove(event: PointerEvent): void {
-        if (this.isEvaluatingPotentialSwipe === false) {
-            return;
-        }
-
-        const swipeHorizontalOffsetPixels = event.clientX - this.dragStartHorizontalScreenPositionInPixels;
-
-        if (this.isCardActivelySwiping() === false && Math.abs(swipeHorizontalOffsetPixels) > this.minimumDragDistanceToCountAsSwipeInPixels) {
-            this.isCardActivelySwiping.set(true);
-            (event.currentTarget as Element).setPointerCapture(event.pointerId);
-        }
-
-        if (this.isCardActivelySwiping() && swipeHorizontalOffsetPixels < 0) {
-            this.swipeHorizontalOffsetPixels.set(swipeHorizontalOffsetPixels);
-        }
-    }
-
-    /**
-     * Finishes a swipe, resetting state and reverting the order if dragged far enough.
-     * @param _event The pointer event (unused).
-     * @remarks If the card was dragged past the revert threshold, the order is sent back to
-     * UnderPreparation.
-     * @returns void
-     */
-    protected onSwipePointerEnd(_event: PointerEvent): void {
-        const wasCardActivelySwiped = this.isCardActivelySwiping();
-        const finalSwipeHorizontalOffsetPixels = this.swipeHorizontalOffsetPixels();
-
-        this.isEvaluatingPotentialSwipe = false;
-        this.isCardActivelySwiping.set(false);
-        this.swipeHorizontalOffsetPixels.set(0);
-
-        if (wasCardActivelySwiped && Math.abs(finalSwipeHorizontalOffsetPixels) >= this.minimumDragDistanceToRevertOrderInPixels) {
-            this.statusChange.emit(OrderStatus.UnderPreparation);
-        }
-    }
-    //#endregion
-
-    //#region Private helpers
-
-    /**
-     * Calculates how many whole minutes have passed since the order was created.
-     * @returns The elapsed minutes, or 0 when the order has no creation time.
-     */
-    private getElapsedMinutesSinceOrderCreation(): number {
-        const order = this.order();
-        if (!order.creationTime) {
-            return 0;
-        }
-
-        const orderCreationTimestampMilliseconds = new Date(order.creationTime).getTime();
-        return Math.floor((this.currentTimestampMilliseconds() - orderCreationTimestampMilliseconds) / this.millisecondsPerMinute);
     }
     //#endregion
 }

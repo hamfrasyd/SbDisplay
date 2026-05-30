@@ -55,8 +55,8 @@
 
       <!-- Render order card child component, for each transcationId -->
       @for (order of col; track order.transactionId) {
-      <app-order-card [order]="order" [currentTimestampMilliseconds]="currentTimestampMilliseconds()"
-        [errorMessage]="getOrderCardErrorMessage(order)" (statusChange)="onOrderStatusChange(order, $event)" />
+      <app-order-card [order]="order" [errorMessage]="getOrderCardErrorMessage(order)"
+        (statusChange)="onOrderStatusChange(order, $event)" />
       }
 
     </div>

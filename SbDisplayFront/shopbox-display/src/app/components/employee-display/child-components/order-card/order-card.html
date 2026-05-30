@@ -10,13 +10,13 @@
 
   <!-- Order card -->
   <div class="card order-card d-flex flex-column"
-    [class.order-card-too-old]="isOrderOlderThanFiveMinutes() && order().status !== orderStatusEnum.ReadyForPickup && order().status !== orderStatusEnum.Completed"
+    [class.order-card-too-old]="isOrderConsideredOld() && order().status !== orderStatusEnum.ReadyForPickup && order().status !== orderStatusEnum.Completed"
     [class.order-card-ready]="order().status === orderStatusEnum.ReadyForPickup"
     [class.order-card-completed]="order().status === orderStatusEnum.Completed"
     [class.order-card-expanded]="isCardExpanded()" [class.order-card-swipeable]="isOrderSwipeable()"
-    [class.order-card-swiping]="isCardActivelySwiping()" [style.transform]="getSwipeTransformStyle()"
-    (pointerdown)="onSwipePointerDown($event)" (pointermove)="onSwipePointerMove($event)"
-    (pointerup)="onSwipePointerEnd($event)" (pointercancel)="onSwipePointerEnd($event)">
+    [class.order-card-swiping]="cardSwipe.isCardActivelySwiping()" [style.transform]="cardSwipe.getSwipeTransformStyle()"
+    (pointerdown)="cardSwipe.onPointerDown($event)" (pointermove)="cardSwipe.onPointerMove($event)"
+    (pointerup)="cardSwipe.onPointerEnd($event)" (pointercancel)="cardSwipe.onPointerEnd($event)">
 
     <!-- Order card header -->
     <div class="card-header d-flex justify-content-between align-items-center"
@@ -66,9 +66,9 @@
         Oprettet: {{ order().creationTime | date:'HH:mm' }}
       </small>
       <small
-        [class.text-muted]="!isOrderOlderThanFiveMinutes()"
-        [class.text-danger]="isOrderOlderThanFiveMinutes()"
-        [class.fw-bold]="isOrderOlderThanFiveMinutes()">
+        [class.text-muted]="!isOrderConsideredOld()"
+        [class.text-danger]="isOrderConsideredOld()"
+        [class.fw-bold]="isOrderConsideredOld()">
         {{ getElapsedMinutesSinceOrderCreationLabel() }}
       </small>
 
