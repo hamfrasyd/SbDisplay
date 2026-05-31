@@ -22,14 +22,14 @@
     <div class="tab-bar-row">
       <ul class="nav nav-tabs border-0">
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Received"
+          <button type="button" class="nav-link" [class.active]="isReceivedEmployeeTabActive()"
             (click)="setActiveEmployeeTab(employeeTabEnum.Received)">
             Modtaget
             <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
           </button>
         </li>
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Completed"
+          <button type="button" class="nav-link" [class.active]="isCompletedEmployeeTabActive()"
             (click)="setActiveEmployeeTab(employeeTabEnum.Completed)">
             Færdig
             <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
@@ -48,23 +48,27 @@
 
 <div class="container-fluid py-4">
 
+  @if (isLoadingOrders()) {
+  <div class="employee-orders-loading text-center mt-4" role="status" aria-live="polite">
+    <div class="spinner-border text-secondary employee-orders-loading-spinner" aria-hidden="true"></div>
+    <p class="text-muted mt-3 mb-0">Indlæser ordrer...</p>
+  </div>
+  } @else if (hasCurrentlyDisplayedOrders()) {
   <!-- Currently displayed orders grid -->
   <div class="order-columns-grid">
-    @for (col of ordersDistributedIntoResponsiveColumns(); track $index) {
+    @for (column of orderColumnsWithCardErrorMessages(); track $index) {
     <div class="order-column">
-
-      <!-- Render order card child component, for each transcationId -->
-      @for (order of col; track order.transactionId) {
-      <app-order-card [order]="order" [errorMessage]="getOrderCardErrorMessage(order)"
-        (statusChange)="onOrderStatusChange(order, $event)" />
+      @for (orderCardEntry of column; track orderCardEntry.order.transactionId) {
+      <app-order-card [order]="orderCardEntry.order" [errorMessage]="orderCardEntry.errorMessage"
+        (statusChange)="onOrderStatusChange(orderCardEntry.order, $event)" />
+      } @empty {
       }
-
     </div>
+    } @empty {
+    <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
     }
   </div>
-
-  <!-- Empty state if no orders -->
-  @if (currentlyDisplayedOrders().length === 0) {
+  } @else {
   <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
   }
 

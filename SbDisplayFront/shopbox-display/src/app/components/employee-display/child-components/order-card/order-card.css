@@ -1,7 +1,9 @@
+/* Root host for the order card component. */
 :host {
   display: block;
 }
 
+/* Base card shell shared by every order status. */
 .order-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
@@ -11,11 +13,13 @@
   height: 20rem;
 }
 
+/* Expanded card grows with its full item list. */
 .order-card-expanded {
   height: auto;
   min-height: 20rem;
 }
 
+/* Scrollable middle section that holds the order item list. */
 .order-card-body {
   flex: 1;
   overflow: hidden;
@@ -25,38 +29,42 @@
   -webkit-touch-callout: none;
 }
 
+/* Lift effect on hover for cards that can still be advanced. */
 .order-card:not(.order-card-completed):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
 }
 
+/* Ready-for-pickup orders use the green status styling. */
 .order-card-ready {
   border-color: #3ab54a;
-  border-width: 2px;
+  border-width: 0.125rem;
   background-color: #d1e7dd;
 }
 
+/* Completed orders use a muted neutral appearance. */
 .order-card-completed {
   background-color: #f8f9fa;
 }
 
+/* Completed cards are read-only, so the body should not look clickable. */
 .order-card-completed .order-card-body {
   cursor: default;
 }
 
-/* Expanded card: allow body to show all content */
+/* Expanded cards show every item, so scrolling is no longer needed. */
 .order-card-expanded .order-card-body {
   overflow: visible;
 }
 
-/* Swipe-to-revert support */
-
+/* Wrapper that clips the swipe gesture and hosts the revert indicator. */
 .order-swipe-container {
   position: relative;
   overflow: hidden;
   border-radius: 0.375rem;
 }
 
+/* Yellow panel revealed when a ready order is swiped back to preparation. */
 .order-swipe-indicator {
   position: absolute;
   top: 0;
@@ -74,25 +82,26 @@
   pointer-events: none;
 }
 
+/* Ready-for-pickup cards that can be swiped back to preparation. */
 .order-card-swipeable {
   touch-action: pan-y;
   position: relative;
   z-index: 1;
 }
 
-/* Disable transition while actively dragging so the card tracks the finger 1:1 */
+/* Disables transition while the card follows the finger during a swipe. */
 .order-card.order-card-swiping {
   transition: none;
 }
 
-/* Show-more / show-less toggle in card body */
+/* Button that expands or collapses the order item preview list. */
 .order-items-toggle {
   display: block;
   width: 100%;
   padding: 0.25rem 0;
   background: none;
   border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 0.0625rem solid rgba(0, 0, 0, 0.1);
   color: #3ab54a;
   font-size: 1.25rem;
   font-weight: 500;
@@ -101,34 +110,50 @@
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+/* Hover state for the expand/collapse item toggle. */
 .order-items-toggle:hover {
   color: #6cca78;
   background-color: rgba(0, 0, 0, 0.04);
 }
 
-/* Status change buttons - custom palette */
+/* Icon shown beside the expand/collapse item toggle label. */
+.order-items-toggle-icon {
+  width: 1.625rem;
+  height: 1.625rem;
+}
+
+/* Points the toggle icon upward when the card is expanded. */
+.order-items-toggle-icon-expanded {
+  transform: rotate(180deg);
+}
+
+/* Completed-tab button that moves an order back to under preparation. */
 .order-btn-prep {
   background-color: #fde68a;
   border-color: #d97706;
   color: #78350f;
 }
 
+/* Hover state for the under-preparation status button. */
 .order-btn-prep:hover {
   background-color: #fcd34d;
   color: #78350f;
 }
 
+/* Completed-tab button that moves an order to ready for pickup. */
 .order-btn-ready {
   background-color: #a7f3d0;
   border-color: #0E9E73;
   color: #064e3b;
 }
 
+/* Hover state for the ready-for-pickup status button. */
 .order-btn-ready:hover {
   background-color: #6ee7b7;
   color: #064e3b;
 }
 
+/* Under-preparation orders that have waited too long. */
 .order-card-too-old {
   background-color: #f8d7da;
   border-color: #dc3545;

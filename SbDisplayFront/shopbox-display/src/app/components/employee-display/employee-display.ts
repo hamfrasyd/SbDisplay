@@ -68,6 +68,12 @@ export class EmployeeDisplay {
      * @remarks Aliased so the template can read it without exposing the OrderDisplayStateService dependency.
      */
     protected readonly initialLoadErrorMessage = this.orderDisplayState.loadError;
+
+    /**
+     * Whether the initial orders fetch from the API is still in progress.
+     * @remarks Aliased so the template can show a loading state without reaching into the service.
+     */
+    protected readonly isLoadingOrders = this.orderDisplayState.isLoadingOrders;
     //#endregion
 
     //#region Derived (computed) state
@@ -107,6 +113,34 @@ export class EmployeeDisplay {
     protected readonly ordersDistributedIntoResponsiveColumns = computed(() => {
         return this.responsiveOrderColumns.distributeIntoColumns(this.currentlyDisplayedOrders());
     });
+
+    /** Whether the active tab has at least one order to render. */
+    protected readonly hasCurrentlyDisplayedOrders = computed(() => this.currentlyDisplayedOrders().length > 0);
+
+    /** Whether the Received tab is the active employee tab. */
+    protected readonly isReceivedEmployeeTabActive = computed(() =>
+        this.activeEmployeeTab() === EmployeeTab.Received,
+    );
+
+    /** Whether the Completed tab is the active employee tab. */
+    protected readonly isCompletedEmployeeTabActive = computed(() =>
+        this.activeEmployeeTab() === EmployeeTab.Completed,
+    );
+
+    /**
+     * Responsive columns with each order paired to its card error message.
+     * @remarks Keeps per-order error lookup out of the template so the grid binds to plain values.
+     */
+    protected readonly orderColumnsWithCardErrorMessages = computed(() => {
+        const errorMessagesByOrderTransactionId = this.errorMessageByOrderTransactionId();
+
+        return this.ordersDistributedIntoResponsiveColumns().map(columnOrders =>
+            columnOrders.map(order => ({
+                order,
+                errorMessage: this.lookupOrderCardErrorMessage(order, errorMessagesByOrderTransactionId),
+            })),
+        );
+    });
     //#endregion
 
     //#region Tab and page-error handling
@@ -132,18 +166,6 @@ export class EmployeeDisplay {
     //#region Order card handling
 
     /**
-     * The error message to show on a given order's card, if any.
-     * @param order The order whose card error to read.
-     * @returns The card error message, or null when there is none.
-     */
-    protected getOrderCardErrorMessage(order: Order): string | null {
-        if (order.transactionId == null) {
-            return null;
-        }
-        return this.errorMessageByOrderTransactionId().get(order.transactionId) ?? null;
-    }
-
-    /**
      * Handles a status change requested by an order card.
      * @param order The order to update.
      * @param newOrderStatus The status the card resolved to move the order to.
@@ -155,6 +177,22 @@ export class EmployeeDisplay {
     //#endregion
 
     //#region Private helpers
+
+    /**
+     * Reads the card error message for an order from the current error map.
+     * @param order The order whose card error to read.
+     * @param errorMessagesByOrderTransactionId The current per-order error messages.
+     * @returns The card error message, or null when there is none.
+     */
+    private lookupOrderCardErrorMessage(order: Order, errorMessagesByOrderTransactionId: Map<number, string>): string | null {
+        const transactionId = order.transactionId;
+
+        if (transactionId == null) {
+            return null;
+        }
+
+        return errorMessagesByOrderTransactionId.get(transactionId) ?? null;
+    }
 
     /**
      * Sends a status update to the OrderDisplayStateService and surfaces success/failure on the card.

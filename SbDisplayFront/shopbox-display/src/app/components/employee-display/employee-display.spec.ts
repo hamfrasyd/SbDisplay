@@ -8,12 +8,13 @@ import { Order, OrderStatus } from '../../generated/orders';
 
 /**
  * Stub for OrderDisplayStateService so EmployeeDisplay tests never touch HTTP or SignalR.
- * It exposes the same surface the component reads (orders/loadError signals) plus a spy command,
+ * It exposes the same surface the component reads (orders/loadError/isLoadingOrders signals) plus a spy command,
  * and lets each test drive the state by setting the signals.
  */
 class OrderDisplayStateServiceStub {
   readonly orders = signal<Order[]>([]);
   readonly loadError = signal<string | null>(null);
+  readonly isLoadingOrders = signal<boolean>(false);
   updateOrderStatus = vi.fn();
 }
 
@@ -43,6 +44,19 @@ describe('EmployeeDisplay', () => {
 
     // Assert
     expect(employeeDisplayComponent).toBeTruthy();
+  });
+
+  it('ordersBoard_When_InitialOrdersLoadIsInProgress_Should_ShowLoadingIndicator', () => {
+    // Arrange
+    orderDisplayStateServiceStub.isLoadingOrders.set(true);
+
+    // Act
+    employeeDisplayFixture.detectChanges();
+
+    const loadingIndicatorElement = employeeDisplayFixture.nativeElement.querySelector('.employee-orders-loading');
+
+    // Assert
+    expect(loadingIndicatorElement).toBeTruthy();
   });
 
   //#region Tab filtering
@@ -257,7 +271,7 @@ describe('EmployeeDisplay', () => {
 
     // Act
     employeeDisplayComponent['onOrderStatusChange'](orderReadyForPickup, targetOrderStatusAfterUpdate);
-    const cardErrorMessageAfterFailedUpdate = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+    const cardErrorMessageAfterFailedUpdate = employeeDisplayComponent['errorMessageByOrderTransactionId']().get(readyForPickupOrderTransactionId) ?? null;
 
     // Assert
     expect(cardErrorMessageAfterFailedUpdate).toBe(expectedCardErrorMessage);
@@ -293,7 +307,7 @@ describe('EmployeeDisplay', () => {
 
     // Act
     employeeDisplayComponent['onOrderStatusChange'](orderReadyForPickup, targetOrderStatusAfterUpdate);
-    const cardErrorMessageAfterSuccessfulRetry = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+    const cardErrorMessageAfterSuccessfulRetry = employeeDisplayComponent['errorMessageByOrderTransactionId']().get(readyForPickupOrderTransactionId) ?? null;
 
     // Assert
     expect(cardErrorMessageAfterSuccessfulRetry).toBeNull();
@@ -344,7 +358,7 @@ describe('EmployeeDisplay', () => {
 
   //#region Per-card error lookup
 
-  it('getOrderCardErrorMessage_When_NoErrorForOrder_Should_ReturnNull', () => {
+  it('errorMessageByOrderTransactionId_When_NoErrorForOrder_Should_ReturnNull', () => {
     // Arrange
     const readyForPickupOrderTransactionId = 2;
     const readyForPickupOrderId = 22;
@@ -356,7 +370,7 @@ describe('EmployeeDisplay', () => {
     };
 
     // Act
-    const cardErrorMessageWhenNoErrorWasSet = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+    const cardErrorMessageWhenNoErrorWasSet = employeeDisplayComponent['errorMessageByOrderTransactionId']().get(readyForPickupOrderTransactionId) ?? null;
 
     // Assert
     expect(cardErrorMessageWhenNoErrorWasSet).toBeNull();

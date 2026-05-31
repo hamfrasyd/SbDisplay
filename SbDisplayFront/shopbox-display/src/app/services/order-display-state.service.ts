@@ -48,6 +48,18 @@ export class OrderDisplayStateService {
      */
     public readonly loadError = this._loadError.asReadonly();
 
+    /**
+     * Private signal that tracks whether the initial orders fetch is still in flight.
+     * @remarks Starts true because the constructor kicks off loadAllOrders immediately.
+     */
+    private readonly _isLoadingOrders = signal<boolean>(true);
+
+    /**
+     * Readonly signal that is true while orders are being fetched from the API.
+     * @remarks Cleared on both success and failure so the UI can leave the loading state.
+     */
+    public readonly isLoadingOrders = this._isLoadingOrders.asReadonly();
+
 
     /**
      * Readonly signal that holds an array of orders that are preparing.
@@ -77,16 +89,20 @@ export class OrderDisplayStateService {
      * Loads all orders from the API and sets the _orders signal.
      */
     private loadAllOrders(): void {
+        this._isLoadingOrders.set(true);
+
         this.orderService.getAllOrders().subscribe({
             // next is called when the API call is successful. Resembles promise.then(orders => { ... }) in javascript.
             next: orders => {
                 this._loadError.set(null);
                 this._orders.set(orders ?? []); // if orders is null, set it to an empty array.
+                this._isLoadingOrders.set(false);
             },
             // error is called when the API call fails. Resembles promise.catch(error => { ... }) in javascript.
             error: error => {
                 console.error('Failed to load orders:', error);
                 this._loadError.set('Kunne ikke hente ordrer. Prøv at genindlæse siden.');
+                this._isLoadingOrders.set(false);
             }
         });
     }

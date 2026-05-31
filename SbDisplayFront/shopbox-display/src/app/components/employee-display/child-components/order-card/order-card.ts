@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Order, OrderItem, OrderStatus } from '../../../../generated/orders';
 import { OrderTimeTracker } from '../../helpers/order-time-tracker.service';
@@ -86,7 +86,7 @@ export class OrderCard {
      * @remarks canSwipe gates the gesture to swipeable orders, onRevertRequested maps a completed
      * swipe to the previous status in the lifecycle and emits it.
      */
-    protected readonly cardSwipe = new OrderCardSwipe({
+    private readonly cardSwipe = new OrderCardSwipe({
         canSwipe: () => this.isOrderSwipeable(),
         onRevertRequested: () => {
             const previousOrderStatus = getPreviousOrderStatus(this.order().status);
@@ -97,22 +97,104 @@ export class OrderCard {
     });
     //#endregion
 
-    //#region Order age helpers
+    //#region Derived (computed) state
 
-    /**
-     * Builds the "X min" label for the order's age.
-     * @returns A label like "3 min".
-     */
-    protected getElapsedMinutesSinceOrderCreationLabel(): string {
-        return `${this.orderTimeTracker.getElapsedMinutesSinceOrderCreation(this.order())} min`;
-    }
+    /** Whether the order has at least one line item to render. */
+    protected readonly hasOrderItems = computed(() =>
+        (this.order().items?.length ?? 0) > 0
+    );
 
-    /**
-     * Whether the order is old enough to be visually flagged.
-     * @returns true if the order is at least the "old" threshold in minutes.
-     */
-    protected isOrderConsideredOld(): boolean {
+    /** Whether the order is old enough to be visually flagged. */
+    protected readonly isOrderConsideredOld = computed(() => {
+        this.orderTimeTracker.currentTimestampMilliseconds();
         return this.orderTimeTracker.isOrderConsideredOld(this.order());
+    });
+
+    /** Whether the overdue styling should apply to the card shell. */
+    protected readonly isOrderCardTooOld = computed(() => {
+        if (this.isOrderConsideredOld() === false) {
+            return false;
+        }
+
+        const orderStatus = this.order().status;
+
+        if (orderStatus === OrderStatus.ReadyForPickup || orderStatus === OrderStatus.Completed) {
+            return false;
+        }
+
+        return true;
+    });
+
+    /** Whether the card uses the ready-for-pickup styling. */
+    protected readonly isOrderCardReady = computed(() =>
+        this.order().status === OrderStatus.ReadyForPickup
+);
+
+    /** Whether the card uses the completed styling. */
+    protected readonly isOrderCardCompleted = computed(() =>
+        this.order().status === OrderStatus.Completed
+);
+
+    /** Whether the order can be swiped back to preparation. */
+    protected readonly isOrderSwipeable = computed(() =>
+        this.order().status === OrderStatus.ReadyForPickup
+);
+
+    /** Label showing how many minutes have passed since the order was created. */
+    protected readonly elapsedMinutesSinceOrderCreationLabel = computed(
+        () => `${this.orderTimeTracker.getElapsedMinutesSinceOrderCreation(this.order())} min`,
+    );
+
+    /** Whether the age label should use the muted text styling. */
+    protected readonly isOrderAgeLabelMuted = computed(() =>
+        this.isOrderConsideredOld() === false
+);
+
+    /** Order items rendered in the card body, respecting the collapsed preview limit. */
+    protected readonly visibleOrderItems = computed((): OrderItem[] => {
+        const order = this.order();
+        if (!order.items?.length) {
+            return [];
+        }
+        if (this.isCardExpanded()) {
+            return order.items;
+        }
+        return order.items.slice(0, this.maximumPreviewOrderItemCount);
+    });
+
+    /** How many order items are hidden behind the collapsed preview. */
+    protected readonly hiddenOrderItemCount = computed(() => {
+        const order = this.order();
+        if (!order.items?.length) {
+            return 0;
+        }
+        return Math.max(0, order.items.length - this.maximumPreviewOrderItemCount);
+    });
+
+    /** Whether the expand/collapse control should be shown below the item list. */
+    protected readonly shouldShowOrderItemsToggle = computed(() =>
+        this.hiddenOrderItemCount() > 0 || this.isCardExpanded()
+    );
+    //#endregion
+
+    //#region Display labels
+
+    /**
+     * Returns the Danish label shown for an order status.
+     * @param orderStatus The status to translate for display.
+     * @returns The Danish label, or 'N/A' when the status is missing or unknown.
+     */
+    protected getOrderStatusDisplayLabel(orderStatus: OrderStatus | undefined | null): string {
+        switch (orderStatus) {
+            case OrderStatus.UnderPreparation:
+                return 'Under tilberedning';
+            case OrderStatus.ReadyForPickup:
+                return 'Klar til afhentning';
+            case OrderStatus.Completed:
+                return 'Færdig';
+            default:
+                return 'N/A';
+        }
     }
     //#endregion
 
@@ -141,17 +223,6 @@ export class OrderCard {
     }
     //#endregion
 
-    //#region Swipe predicates
-
-    /**
-     * Whether the order can be swiped back to preparation.
-     * @returns true only for orders that are ReadyForPickup.
-     */
-    protected isOrderSwipeable(): boolean {
-        return this.order().status === OrderStatus.ReadyForPickup;
-    }
-    //#endregion
-
     //#region Card expansion
 
     /**
@@ -165,32 +236,33 @@ export class OrderCard {
         event.stopPropagation();
         this.isCardExpanded.update(isExpanded => isExpanded === false);
     }
+    //#endregion
 
-    /**
-     * The order items to render, respecting the collapsed preview limit.
-     * @returns All items when expanded, otherwise the first few as a preview.
-     */
-    protected getVisibleOrderItems(): OrderItem[] {
-        const order = this.order();
-        if (!order.items?.length) {
-            return [];
-        }
-        if (this.isCardExpanded()) {
-            return order.items;
-        }
-        return order.items.slice(0, this.maximumPreviewOrderItemCount);
+    //#region Swipe template wrapper methods
+
+    /** Whether the card is currently following an active swipe gesture. */
+    protected isOrderCardActivelySwiping(): boolean {
+        return this.cardSwipe.isCardActivelySwiping();
     }
 
-    /**
-     * How many items are hidden behind the collapsed preview.
-     * @returns The number of items not shown in the preview (0 when none).
-     */
-    protected getHiddenOrderItemCount(): number {
-        const order = this.order();
-        if (!order.items?.length) {
-            return 0;
-        }
-        return Math.max(0, order.items.length - this.maximumPreviewOrderItemCount);
+    /** The CSS transform applied while the card is being swiped. */
+    protected getOrderCardSwipeTransformStyle(): string | null {
+        return this.cardSwipe.getSwipeTransformStyle();
+    }
+
+    /** Records the start of a potential swipe on pointer-down. */
+    protected onOrderCardPointerDown(event: PointerEvent): void {
+        this.cardSwipe.onPointerDown(event);
+    }
+
+    /** Tracks pointer movement while a swipe is being evaluated or performed. */
+    protected onOrderCardPointerMove(event: PointerEvent): void {
+        this.cardSwipe.onPointerMove(event);
+    }
+
+    /** Finishes a swipe on pointer-up or pointer-cancel. */
+    protected onOrderCardPointerEnd(event: PointerEvent): void {
+        this.cardSwipe.onPointerEnd(event);
     }
     //#endregion
 }

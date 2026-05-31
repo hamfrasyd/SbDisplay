@@ -1,16 +1,18 @@
+/* Root host for the employee order board page. */
 :host {
   display: block;
   background-color: #ebe9e9;
   min-height: 100vh;
 }
 
-/* Independent column stacks — each column grows/collapses independently */
+/* Responsive row of order columns; each column stacks its cards independently. */
 .order-columns-grid {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
 }
 
+/* One vertical column inside the responsive order grid. */
 .order-column {
   flex: 1;
   display: flex;
@@ -19,7 +21,7 @@
   min-width: 0;
 }
 
-/* Sticky tab bar */
+/* Top row that places the tabs on the left and the logo on the right. */
 .tab-bar-row {
   display: flex;
   align-items: flex-end;
@@ -27,15 +29,18 @@
   flex-wrap: nowrap;
 }
 
+/* Keep Received and Completed tabs on one line beside the logo. */
 .tab-bar-row .nav-tabs {
   flex-wrap: nowrap;
 }
 
+/* Clickable logo link aligned with the tab bar. */
 .tab-bar-logo-link {
   display: flex;
   align-items: center;
 }
 
+/* Shopbox logo shown in the tab bar. */
 .tab-bar-logo {
   height: 4rem;
   width: auto;
@@ -43,6 +48,7 @@
   align-self: center;
 }
 
+/* Sticky header that holds errors, tabs, and the logo while scrolling the board. */
 .employee-tab-bar {
   position: sticky;
   top: 0;
@@ -52,16 +58,21 @@
   box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.06);
 }
 
-.nav-tabs .nav-link { 
+/* Inactive tab buttons for switching between Received and Completed. */
+.nav-tabs .nav-link {
   color: #495057;
   font-size: clamp(1rem, 3vw, 1.5rem);
   padding: 0.75rem clamp(2rem, 10vw, 6rem);
   box-shadow: 0 0.1rem 0.2rem #ebe9e9;
-
 }
 
-.nav-tabs .nav-link.active {
-  font-weight: 600;
-  background-color: #ebe9e9;
-  border-bottom-color: #ebe9e9;
+/* Centered loading state shown while the initial orders fetch is in flight. */
+.employee-orders-loading {
+  padding: 2rem 0;
+}
+
+/* Bootstrap spinner sized for the employee order board loading state. */
+.employee-orders-loading-spinner {
+  width: 3rem;
+  height: 3rem;
 }

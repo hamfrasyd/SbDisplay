@@ -360,7 +360,7 @@ describe('OrderCard', () => {
 
   //#region Collapsed item preview
 
-  it('getVisibleOrderItems_When_CollapsedAndMoreThanPreviewLimit_Should_ReturnOnlyPreviewItems', () => {
+  it('visibleOrderItems_When_CollapsedAndMoreThanPreviewLimit_Should_ReturnOnlyPreviewItems', () => {
     // Arrange
     const testOrderTransactionId = 1;
     const maximumPreviewOrderItemCount = 4;
@@ -376,13 +376,13 @@ describe('OrderCard', () => {
     orderCardFixture.detectChanges();
 
     // Act
-    const visibleOrderItemsInCollapsedCard = orderCardComponent['getVisibleOrderItems']();
+    const visibleOrderItemsInCollapsedCard = orderCardComponent['visibleOrderItems']();
 
     // Assert
     expect(visibleOrderItemsInCollapsedCard.length).toBe(maximumPreviewOrderItemCount);
   });
 
-  it('getVisibleOrderItems_When_Expanded_Should_ReturnAllItems', () => {
+  it('visibleOrderItems_When_Expanded_Should_ReturnAllItems', () => {
     // Arrange
     const testOrderTransactionId = 1;
     const totalOrderItemCountAbovePreviewLimit = 6;
@@ -398,13 +398,13 @@ describe('OrderCard', () => {
 
     // Act
     orderCardComponent['isCardExpanded'].set(true);
-    const visibleOrderItemsInExpandedCard = orderCardComponent['getVisibleOrderItems']();
+    const visibleOrderItemsInExpandedCard = orderCardComponent['visibleOrderItems']();
 
     // Assert
     expect(visibleOrderItemsInExpandedCard.length).toBe(totalOrderItemCountAbovePreviewLimit);
   });
 
-  it('getHiddenOrderItemCount_When_MoreItemsThanPreviewLimit_Should_ReturnHiddenCount', () => {
+  it('hiddenOrderItemCount_When_MoreItemsThanPreviewLimit_Should_ReturnHiddenCount', () => {
     // Arrange
     const testOrderTransactionId = 1;
     const maximumPreviewOrderItemCount = 4;
@@ -421,7 +421,7 @@ describe('OrderCard', () => {
     orderCardFixture.detectChanges();
 
     // Act
-    const hiddenOrderItemCountInCollapsedCard = orderCardComponent['getHiddenOrderItemCount']();
+    const hiddenOrderItemCountInCollapsedCard = orderCardComponent['hiddenOrderItemCount']();
 
     // Assert
     expect(hiddenOrderItemCountInCollapsedCard).toBe(expectedHiddenOrderItemCount);
