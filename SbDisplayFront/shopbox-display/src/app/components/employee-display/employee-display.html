@@ -2,6 +2,13 @@
 <div class="employee-tab-bar">
   <div class="container-fluid">
 
+    <!-- Initial load error -->
+    @if (initialLoadErrorMessage(); as loadError) {
+    <div class="alert alert-danger mb-0 mt-2" role="alert">
+      <span>{{ loadError }}</span>
+    </div>
+    }
+
     <!-- Page error message -->
     @if (pageLevelErrorMessage(); as error) {
     <div class="alert alert-danger alert-dismissible d-flex justify-content-between align-items-center mb-0 mt-2"
@@ -15,14 +22,14 @@
     <div class="tab-bar-row">
       <ul class="nav nav-tabs border-0">
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Received"
+          <button type="button" class="nav-link" [class.active]="isReceivedEmployeeTabActive()"
             (click)="setActiveEmployeeTab(employeeTabEnum.Received)">
             Modtaget
             <span class="badge bg-secondary ms-1">{{ receivedOrders().length }}</span>
           </button>
         </li>
         <li class="nav-item">
-          <button type="button" class="nav-link" [class.active]="activeEmployeeTab() === employeeTabEnum.Completed"
+          <button type="button" class="nav-link" [class.active]="isCompletedEmployeeTabActive()"
             (click)="setActiveEmployeeTab(employeeTabEnum.Completed)">
             Færdig
             <span class="badge bg-secondary ms-1">{{ completedOrders().length }}</span>
@@ -30,7 +37,7 @@
         </li>
       </ul>
 
-      <!-- Logo — læg filen i public/ og opdater filnavnet her -->
+      <!-- Logo -->
       <a href="/" class="tab-bar-logo-link">
         <img src="shopbox-logo.png" alt="Logo" class="tab-bar-logo" />
       </a>
@@ -41,116 +48,27 @@
 
 <div class="container-fluid py-4">
 
-  <!-- Currently displayed orders grid — independent column stacks so expanding one card only affects its own column -->
+  @if (isLoadingOrders()) {
+  <div class="employee-orders-loading text-center mt-4" role="status" aria-live="polite">
+    <div class="spinner-border text-secondary employee-orders-loading-spinner" aria-hidden="true"></div>
+    <p class="text-muted mt-3 mb-0">Indlæser ordrer...</p>
+  </div>
+  } @else if (hasCurrentlyDisplayedOrders()) {
+  <!-- Currently displayed orders grid -->
   <div class="order-columns-grid">
-    @for (col of ordersDistributedIntoResponsiveColumns(); track $index) {
+    @for (column of orderColumnsWithCardErrorMessages(); track $index) {
     <div class="order-column">
-      @for (order of col; track order.transactionId) {
-
-      <!-- Swipe container wraps each card so the revert indicator can be revealed behind it -->
-      <div class="order-swipe-container">
-
-        <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
-        @if (isOrderSwipeable(order)) {
-        <div class="order-swipe-indicator">
-          <span>← Tilbage til tilberedning</span>
-        </div>
-        }
-
-              <!-- Order card -->
-      <div class="card order-card d-flex flex-column"
-          [class.order-card-too-old]="isOrderOlderThanFiveMinutes(order) && order.status !== orderStatusEnum.ReadyForPickup && order.status !== orderStatusEnum.Completed"
-          [class.order-card-ready]="order.status === orderStatusEnum.ReadyForPickup"
-          [class.order-card-completed]="order.status === orderStatusEnum.Completed"
-          [class.order-card-expanded]="isOrderCardExpanded(order)" [class.order-card-swipeable]="isOrderSwipeable(order)"
-          [class.order-card-swiping]="isOrderCurrentlySwiping(order)" [style.transform]="getSwipeTransformStyle(order)"
-          (pointerdown)="onSwipePointerDown($event, order)" (pointermove)="onSwipePointerMove($event, order)"
-          (pointerup)="onSwipePointerEnd($event, order)" (pointercancel)="onSwipePointerEnd($event, order)">
-
-          <!-- Order card header -->
-          <div class="card-header d-flex justify-content-between align-items-center"
-            (dblclick)="onOrderCardDoubleClick(order)">
-            <strong class="fs-5">Order #{{ order.id ?? 'N/A' }}</strong>
-            <small class="text-muted">{{ order.status ?? 'N/A' }}</small>
-          </div>
-
-          <!-- Order card body -->
-          <div class="card-body order-card-body" (dblclick)="onOrderCardDoubleClick(order)">
-            @if (order.items?.length) {
-            <ul class="list-group list-group-flush">
-              @for (orderItem of getVisibleOrderItems(order); track orderItem.item?.id) {
-              <li class="list-group-item px-0 py-1 border-0 bg-transparent">
-                <span class="badge bg-secondary me-2">
-                  {{ orderItem.quantity }}x
-                </span>
-                {{ orderItem.item?.name }}
-              </li>
-              }
-            </ul>
-            @if (getHiddenOrderItemCount(order) > 0 || isOrderCardExpanded(order)) {
-            <button type="button" class="order-items-toggle mt-2" (click)="toggleOrderCardExpanded(order, $event)">
-              @if (isOrderCardExpanded(order)) {
-              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
-                class="bi bi-hand-index me-1" viewBox="0 0 16 16" style="transform: rotate(180deg)">
-                <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>              </svg>
-              Vis færre
-              } @else {
-              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor"
-                class="bi bi-hand-index me-1" viewBox="0 0 16 16">
-                <path
-                  d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
-              </svg>
-              Vis flere vare +{{ getHiddenOrderItemCount(order) }}
-              }
-            </button>
-            }
-            } @else {
-            <p class="text-muted mb-0">Ingen varer</p>
-            }
-          </div>
-
-          <!-- Order card footer -->
-          <div class="card-footer mt-auto card-header d-flex justify-content-between align-items-center">
-            <small class="text-muted d-block mb-2" (dblclick)="onOrderCardDoubleClick(order)">
-              Oprettet: {{ order.creationTime | date:'HH:mm' }}
-            </small>
-            <small
-              [class.text-muted]="!isOrderOlderThanFiveMinutes(order)"
-              [class.text-danger]="isOrderOlderThanFiveMinutes(order)"
-              [class.fw-bold]="isOrderOlderThanFiveMinutes(order)">
-              {{ getElapsedMinutesSinceOrderCreationLabel(order) }}
-            </small>
-
-            @if (errorMessageByOrderTransactionId().get(order.transactionId!); as cardError) {
-            <div class="alert alert-danger mt-2 mb-0 py-2 small">
-              {{ cardError }}
-            </div>
-            }
-
-            <!-- Status change buttons (Completed tab only) -->
-            @if (order.status === orderStatusEnum.Completed) {
-            <div class="d-flex justify-content-between gap-2">
-              <button type="button" class="btn btn order-btn-prep"
-                (click)="onChangeOrderStatus(order, orderStatusEnum.UnderPreparation)">
-                Under tilberedning
-              </button>
-              <button type="button" class="btn btn order-btn-ready"
-                (click)="onChangeOrderStatus(order, orderStatusEnum.ReadyForPickup)">
-                Klar til afhentning
-              </button>
-            </div>
-            }
-          </div>
-        </div>
-      </div>
-
+      @for (orderCardEntry of column; track orderCardEntry.order.transactionId) {
+      <app-order-card [order]="orderCardEntry.order" [errorMessage]="orderCardEntry.errorMessage"
+        (statusChange)="onOrderStatusChange(orderCardEntry.order, $event)" />
+      } @empty {
       }
     </div>
+    } @empty {
+    <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
     }
   </div>
-
-  <!-- Empty state if no orders -->
-  @if (currentlyDisplayedOrders().length === 0) {
+  } @else {
   <p class="text-muted text-center mt-4 mb-0">Ingen ordrer i denne fane.</p>
   }
 

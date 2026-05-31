@@ -4,53 +4,91 @@ import { Subject } from 'rxjs';
 import { Order } from '../generated/orders';
 import { environment } from '../../environments/environment';
 
+/**
+ * Thin realtime layer over SignalR.
+ * - Opens the connection to the backend hub
+ * - and forwards incoming hub events onto typed RxJS streams.
+ *
+ * @remarks It holds no state and does no filtering. The OrderDisplayStateService
+ * subscribes to these streams and folds the orders into its own signal state.
+ * @remarks providedIn: 'root' means this service is a singleton and can be injected anywhere.
+ */
 @Injectable({ providedIn: 'root' })
 export class SignalRService {
-    // '!'-tegnet fortæller TypeScript at feltet bliver sat senere (i startConnection), så det ikke kræver init her.
+    /**
+     * The active hub connection.
+     * @remarks The '!' tells TypeScript the field is assigned later (in startConnection),
+     * so it doesn't require an initializer here.
+     */
     private hubConnection!: signalR.HubConnection;
 
-    // Subject er en RxJS event-stream. Andre services/komponenter kan .subscribe() og modtage nye værdier i realtime.
-    // Konventionen $ i navnet markerer at feltet er en stream/observable.
+    /**
+     * Stream that emits whenever the backend pushes a new order.
+     * @remarks Subject is an RxJS event-stream. Other services/components can .subscribe()
+     * to receive new values in realtime.
+     * @remarks The $ suffix is the convention that marks a field as a stream/observable.
+     */
     public newOrder$ = new Subject<Order>();
+
+    /**
+     * Stream that emits whenever the backend pushes an updated order status.
+     * @remarks Subject is an RxJS event-stream. Other services/components can .subscribe()
+     * to receive new values in realtime.
+     * @remarks The $ suffix is the convention that marks a field as a stream/observable.
+     */
     public updatedOrder$ = new Subject<Order>();
 
-    // URL'en kommer fra environment, så dev og prod peger på hver sin backend uden kodeændring.
-    private apiSignalRHubUrl = `${environment.apiUrl}/SignalR/Hubs/ShopboxHub`;
+    /**
+     * The URL of the backend SignalR hub.
+     * @remarks The hub URL comes from environment, so dev and prod point at their own apiUrl.
+     * @remarks This URL must match app.MapHub<ShopboxHub>(...) in the backend's Program.cs.
+     */
+    private readonly apiSignalRHubUrl = `${environment.apiUrl}/SignalR/Hubs/ShopboxHub`;
 
+    /**
+     * Builds the connection, wires up the event handlers, and opens it.
+     * @returns void
+     */
     public startConnection(): void {
-        // Bygger SignalR-forbindelsen. URL'en skal matche app.MapHub<ShopboxHub>(...) i backendens Program.cs.
+        // Builds the SignalR connection.
         this.hubConnection = new signalR.HubConnectionBuilder()
             .withUrl(this.apiSignalRHubUrl, {
-                withCredentials: true // Kræves når backend tillader credentials i CORS-politikken.
+                withCredentials: true // Required when the backend allows credentials in its CORS policy.
             })
-            .withAutomaticReconnect() // Genopretter forbindelsen automatisk hvis den kortvarigt ryger.
-            .configureLogging(signalR.LogLevel.Information) // Logger SignalR-info i browserens console, nyttigt til fejlfinding.
+            .withAutomaticReconnect() // Re-establishes the connection automatically if it briefly drops.
+            .configureLogging(signalR.LogLevel.Information) // Logs SignalR info to the browser console, useful for debugging.
             .build();
 
-        // on lytter på en event fra backend. Navnet skal matche det navn, som backend bruger i Clients.All.SendAsync("ReceiveNewOrderNotification", order).
+        // 'on' listens for an event from the backend hub.
+        // The name must match the one the backend hub uses in Clients.All.SendAsync("ReceiveNewOrderNotification", order).
         this.hubConnection.on('ReceiveNewOrderNotification', (order: Order) => {
             console.log('SignalR received new order:', order);
-            
-            // Sender ordren videre til alle subscribers af newOrder$.
+
+            // Forward the order to every subscriber of newOrder$.
             this.newOrder$.next(order);
         });
 
         this.hubConnection.on('ReceiveOrderStatusUpdate', (order: Order) => {
             console.log('SignalR received order update:', order);
-            
+
             this.updatedOrder$.next(order);
         });
 
-        // Åbner selve forbindelsen. '.then/.catch' håndterer succes/fejl ved oprettelse af forbindelsen.
+        // Opens the connection itself.
+        // '.then/.catch' handles success/failure of establishing the connection.
         this.hubConnection
             .start()
             .then(() => console.log('SignalR connected'))
             .catch((err: Error) => console.error('SignalR error:', err));
     }
 
+    /**
+     * Closes the connection if one is open.
+     * @returns void
+     */
     public stopConnection(): void {
-        // '?.' sikrer at vi kun prøver at stoppe forbindelsen hvis den faktisk er oprettet.
-        // Ellers ville det kaste en fejl hvis stopConnection kaldes før startConnection.
+        // '?.' ensures we only try to stop the connection if it was actually created.
+        // Otherwise it would throw if stopConnection is called before startConnection.
         this.hubConnection?.stop();
     }
 }
