@@ -18,127 +18,348 @@ class OrderDisplayStateServiceStub {
 }
 
 describe('EmployeeDisplay', () => {
-  let component: EmployeeDisplay;
-  let fixture: ComponentFixture<EmployeeDisplay>;
-  let orderStateStub: OrderDisplayStateServiceStub;
-
-  const underPreparationOrder: Order = { transactionId: 1, id: 11, status: OrderStatus.UnderPreparation };
-  const readyForPickupOrder: Order = { transactionId: 2, id: 22, status: OrderStatus.ReadyForPickup };
-  const completedOrder: Order = { transactionId: 3, id: 33, status: OrderStatus.Completed };
+  let employeeDisplayComponent: EmployeeDisplay;
+  let employeeDisplayFixture: ComponentFixture<EmployeeDisplay>;
+  let orderDisplayStateServiceStub: OrderDisplayStateServiceStub;
 
   beforeEach(async () => {
-    orderStateStub = new OrderDisplayStateServiceStub();
+    orderDisplayStateServiceStub = new OrderDisplayStateServiceStub();
 
     await TestBed.configureTestingModule({
       imports: [EmployeeDisplay],
-      providers: [{ provide: OrderDisplayStateService, useValue: orderStateStub }],
+      providers: [{ provide: OrderDisplayStateService, useValue: orderDisplayStateServiceStub }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EmployeeDisplay);
-    component = fixture.componentInstance;
+    employeeDisplayFixture = TestBed.createComponent(EmployeeDisplay);
+    employeeDisplayComponent = employeeDisplayFixture.componentInstance;
+  });
+
+  it('should create', () => {
+    // Arrange
+    // Component, fixture, and order-state stub are prepared in beforeEach.
+
+    // Act
+    employeeDisplayFixture.detectChanges();
+
+    // Assert
+    expect(employeeDisplayComponent).toBeTruthy();
   });
 
   //#region Tab filtering
 
   it('receivedOrders_When_OrdersHaveMixedStatuses_Should_ReturnUnderPreparationAndReadyForPickup', () => {
-    orderStateStub.orders.set([underPreparationOrder, readyForPickupOrder, completedOrder]);
+    // Arrange
+    const underPreparationOrderTransactionId = 1;
+    const underPreparationOrderId = 11;
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+    const completedOrderTransactionId = 3;
+    const completedOrderId = 33;
 
-    expect(component['receivedOrders']()).toEqual([underPreparationOrder, readyForPickupOrder]);
+    const orderUnderPreparation = {
+      transactionId: underPreparationOrderTransactionId,
+      id: underPreparationOrderId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const completedOrder = {
+      transactionId: completedOrderTransactionId,
+      id: completedOrderId,
+      status: OrderStatus.Completed,
+    };
+
+    const ordersWithMixedStatuses = [orderUnderPreparation, orderReadyForPickup, completedOrder];
+    orderDisplayStateServiceStub.orders.set(ordersWithMixedStatuses);
+
+    // Act
+    const receivedOrdersOnEmployeeDisplay = employeeDisplayComponent['receivedOrders']();
+
+    // Assert
+    expect(receivedOrdersOnEmployeeDisplay).toEqual([orderUnderPreparation, orderReadyForPickup]);
   });
 
   it('completedOrders_When_OrdersHaveMixedStatuses_Should_ReturnOnlyCompleted', () => {
-    orderStateStub.orders.set([underPreparationOrder, readyForPickupOrder, completedOrder]);
+    // Arrange
+    const underPreparationOrderTransactionId = 1;
+    const underPreparationOrderId = 11;
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+    const completedOrderTransactionId = 3;
+    const completedOrderId = 33;
 
-    expect(component['completedOrders']()).toEqual([completedOrder]);
+    const orderUnderPreparation = {
+      transactionId: underPreparationOrderTransactionId,
+      id: underPreparationOrderId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const completedOrder = {
+      transactionId: completedOrderTransactionId,
+      id: completedOrderId,
+      status: OrderStatus.Completed,
+    };
+
+    const ordersWithMixedStatuses = [orderUnderPreparation, orderReadyForPickup, completedOrder];
+    orderDisplayStateServiceStub.orders.set(ordersWithMixedStatuses);
+
+    // Act
+    const completedOrdersOnEmployeeDisplay = employeeDisplayComponent['completedOrders']();
+
+    // Assert
+    expect(completedOrdersOnEmployeeDisplay).toEqual([completedOrder]);
   });
   //#endregion
 
   //#region Tab swapping
 
   it('setActiveEmployeeTab_When_SwitchedToCompleted_Should_ShowCompletedOrders', () => {
-    orderStateStub.orders.set([underPreparationOrder, completedOrder]);
+    // Arrange
+    const underPreparationOrderTransactionId = 1;
+    const underPreparationOrderId = 11;
+    const completedOrderTransactionId = 3;
+    const completedOrderId = 33;
+    
+    const orderUnderPreparation = {
+      transactionId: underPreparationOrderTransactionId,
+      id: underPreparationOrderId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const completedOrder = {
+      transactionId: completedOrderTransactionId,
+      id: completedOrderId,
+      status: OrderStatus.Completed,
+    };
 
-    component['setActiveEmployeeTab'](component['employeeTabEnum'].Completed);
+    const employeeCompletedTab = employeeDisplayComponent['employeeTabEnum'].Completed;
+    orderDisplayStateServiceStub.orders.set([orderUnderPreparation, completedOrder]);
 
-    expect(component['currentlyDisplayedOrders']()).toEqual([completedOrder]);
+    // Act
+    employeeDisplayComponent['setActiveEmployeeTab'](employeeCompletedTab);
+    const currentlyDisplayedOrdersAfterTabSwitch = employeeDisplayComponent['currentlyDisplayedOrders']();
+
+    // Assert
+    expect(currentlyDisplayedOrdersAfterTabSwitch).toEqual([completedOrder]);
   });
 
   it('currentlyDisplayedOrders_When_OrderMovesToCompleted_Should_LeaveReceivedAndAppearInCompleted', () => {
-    // The order starts on the Received tab while it is under preparation...
-    orderStateStub.orders.set([{ ...underPreparationOrder }]);
-    expect(component['receivedOrders']().length).toBe(1);
-    expect(component['completedOrders']().length).toBe(0);
+    // Arrange
+    const underPreparationOrderTransactionId = 1;
+    const underPreparationOrderId = 11;
 
-    // ...and once its status flips to Completed it swaps tabs (the computed re-filters off the signal).
-    orderStateStub.orders.set([{ ...underPreparationOrder, status: OrderStatus.Completed }]);
+    const orderUnderPreparation = {
+      transactionId: underPreparationOrderTransactionId,
+      id: underPreparationOrderId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const orderMovedToCompleted = {
+      ...orderUnderPreparation,
+      status: OrderStatus.Completed,
+    };
 
-    expect(component['receivedOrders']().length).toBe(0);
-    expect(component['completedOrders']().length).toBe(1);
+    orderDisplayStateServiceStub.orders.set([orderUnderPreparation]);
+
+    const receivedOrderCountBeforeStatusChange = employeeDisplayComponent['receivedOrders']().length;
+    const completedOrderCountBeforeStatusChange = employeeDisplayComponent['completedOrders']().length;
+
+    // Act
+    orderDisplayStateServiceStub.orders.set([orderMovedToCompleted]);
+
+    const receivedOrderCountAfterStatusChange = employeeDisplayComponent['receivedOrders']().length;
+    const completedOrderCountAfterStatusChange = employeeDisplayComponent['completedOrders']().length;
+
+    // Assert
+    expect(receivedOrderCountBeforeStatusChange).toBe(1);
+    expect(completedOrderCountBeforeStatusChange).toBe(0);
+    expect(receivedOrderCountAfterStatusChange).toBe(0);
+    expect(completedOrderCountAfterStatusChange).toBe(1);
   });
 
   it('tabBar_When_CompletedTabClicked_Should_RenderCompletedOrderCards', async () => {
-    orderStateStub.orders.set([underPreparationOrder, readyForPickupOrder, completedOrder]);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    // Arrange
+    const underPreparationOrderTransactionId = 1;
+    const underPreparationOrderId = 11;
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+    const completedOrderTransactionId = 3;
+    const completedOrderId = 33;
+    const expectedReceivedTabOrderCardCount = 2;
+    const expectedCompletedTabOrderCardCount = 1;
+    const completedTabButtonIndex = 1;
 
-    // Two received orders are shown on the default tab.
-    expect(fixture.nativeElement.querySelectorAll('app-order-card').length).toBe(2);
+    const orderUnderPreparation = {
+      transactionId: underPreparationOrderTransactionId,
+      id: underPreparationOrderId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const completedOrder = {
+      transactionId: completedOrderTransactionId,
+      id: completedOrderId,
+      status: OrderStatus.Completed,
+    };
 
-    // Click the second tab button ("Færdig") to switch to the Completed tab.
-    const tabButtons = fixture.nativeElement.querySelectorAll('.nav-link');
-    (tabButtons[1] as HTMLButtonElement).click();
-    fixture.detectChanges();
-    await fixture.whenStable();
+    const ordersWithMixedStatuses = [orderUnderPreparation, orderReadyForPickup, completedOrder];
+    orderDisplayStateServiceStub.orders.set(ordersWithMixedStatuses);
 
-    expect(fixture.nativeElement.querySelectorAll('app-order-card').length).toBe(1);
+    employeeDisplayFixture.detectChanges();
+    await employeeDisplayFixture.whenStable();
+
+    const orderCardCountOnDefaultReceivedTab = employeeDisplayFixture.nativeElement.querySelectorAll('app-order-card').length;
+
+    const employeeTabButtons = employeeDisplayFixture.nativeElement.querySelectorAll('.nav-link');
+    const completedTabButton = employeeTabButtons[completedTabButtonIndex] as HTMLButtonElement;
+
+    // Act
+    completedTabButton.click();
+
+    employeeDisplayFixture.detectChanges();
+    await employeeDisplayFixture.whenStable();
+
+    const orderCardCountOnCompletedTab = employeeDisplayFixture.nativeElement.querySelectorAll('app-order-card').length;
+
+    // Assert
+    expect(orderCardCountOnDefaultReceivedTab).toBe(expectedReceivedTabOrderCardCount);
+    expect(orderCardCountOnCompletedTab).toBe(expectedCompletedTabOrderCardCount);
   });
   //#endregion
 
   //#region Status-change command + error handling
 
   it('onOrderStatusChange_When_UpdateFails_Should_SetCardErrorForThatOrder', () => {
-    orderStateStub.updateOrderStatus.mockReturnValue(throwError(() => new Error('network down')));
+    // Arrange
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+    const targetOrderStatusAfterUpdate = OrderStatus.Completed;
+    const expectedCardErrorMessage = 'Kunne ikke opdatere status. Prøv igen.';
+    const simulatedNetworkFailureError = new Error('network down');
 
-    component['onOrderStatusChange'](readyForPickupOrder, OrderStatus.Completed);
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
 
-    expect(component['getOrderCardErrorMessage'](readyForPickupOrder)).toBe('Kunne ikke opdatere status. Prøv igen.');
+    orderDisplayStateServiceStub.updateOrderStatus.mockReturnValue(
+      throwError(() => simulatedNetworkFailureError),
+    );
+
+    // Act
+    employeeDisplayComponent['onOrderStatusChange'](orderReadyForPickup, targetOrderStatusAfterUpdate);
+    const cardErrorMessageAfterFailedUpdate = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+
+    // Assert
+    expect(cardErrorMessageAfterFailedUpdate).toBe(expectedCardErrorMessage);
   });
 
   it('onOrderStatusChange_When_UpdateSucceedsAfterError_Should_ClearCardError', () => {
-    // Arrange: first call fails and leaves an error on the card.
-    orderStateStub.updateOrderStatus.mockReturnValue(throwError(() => new Error('network down')));
-    component['onOrderStatusChange'](readyForPickupOrder, OrderStatus.Completed);
+    // Arrange
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+    const targetOrderStatusAfterUpdate = OrderStatus.Completed;
+    const simulatedNetworkFailureError = new Error('network down');
 
-    // Act: a following successful call should clear that card's error.
-    orderStateStub.updateOrderStatus.mockReturnValue(of(completedOrder));
-    component['onOrderStatusChange'](readyForPickupOrder, OrderStatus.Completed);
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const orderReadyForPickupAfterSuccessfulUpdate = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.Completed,
+    };
 
-    expect(component['getOrderCardErrorMessage'](readyForPickupOrder)).toBeNull();
+    orderDisplayStateServiceStub.updateOrderStatus.mockReturnValue(
+      throwError(() => simulatedNetworkFailureError),
+    );
+    
+    employeeDisplayComponent['onOrderStatusChange'](orderReadyForPickup, targetOrderStatusAfterUpdate);
+
+    orderDisplayStateServiceStub.updateOrderStatus.mockReturnValue(
+      of(orderReadyForPickupAfterSuccessfulUpdate),
+    );
+
+    // Act
+    employeeDisplayComponent['onOrderStatusChange'](orderReadyForPickup, targetOrderStatusAfterUpdate);
+    const cardErrorMessageAfterSuccessfulRetry = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+
+    // Assert
+    expect(cardErrorMessageAfterSuccessfulRetry).toBeNull();
   });
 
   it('onOrderStatusChange_When_OrderHasNoTransactionId_Should_SetPageLevelError', () => {
-    const orderWithoutTransactionId: Order = { id: 99, status: OrderStatus.UnderPreparation };
+    // Arrange
+    const orderIdWithoutTransactionId = 99;
+    const targetOrderStatusAfterUpdate = OrderStatus.ReadyForPickup;
 
-    component['onOrderStatusChange'](orderWithoutTransactionId, OrderStatus.ReadyForPickup);
+    const expectedPageLevelErrorMessage = 'Kan ikke opdatere ordre uden transactionId.';
+    const orderWithoutTransactionId = {
+      id: orderIdWithoutTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
 
-    expect(component['pageLevelErrorMessage']()).toBe('Kan ikke opdatere ordre uden transactionId.');
-    expect(orderStateStub.updateOrderStatus).not.toHaveBeenCalled();
+    // Act
+    employeeDisplayComponent['onOrderStatusChange'](orderWithoutTransactionId, targetOrderStatusAfterUpdate);
+    const pageLevelErrorMessageAfterMissingTransactionId = employeeDisplayComponent['pageLevelErrorMessage']();
+
+    // Assert
+    expect(pageLevelErrorMessageAfterMissingTransactionId).toBe(expectedPageLevelErrorMessage);
+    expect(orderDisplayStateServiceStub.updateOrderStatus).not.toHaveBeenCalled();
   });
 
   it('clearPageLevelErrorMessage_When_Called_Should_ResetMessageToNull', () => {
-    component['onOrderStatusChange']({ id: 99, status: OrderStatus.UnderPreparation }, OrderStatus.ReadyForPickup);
-    expect(component['pageLevelErrorMessage']()).not.toBeNull();
+    // Arrange
+    const orderIdWithoutTransactionId = 99;
+    const targetOrderStatusAfterUpdate = OrderStatus.ReadyForPickup;
 
-    component['clearPageLevelErrorMessage']();
+    const orderWithoutTransactionId = {
+      id: orderIdWithoutTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
 
-    expect(component['pageLevelErrorMessage']()).toBeNull();
+    employeeDisplayComponent['onOrderStatusChange'](orderWithoutTransactionId, targetOrderStatusAfterUpdate);
+    const pageLevelErrorMessageBeforeClear = employeeDisplayComponent['pageLevelErrorMessage']();
+
+    // Act
+    employeeDisplayComponent['clearPageLevelErrorMessage']();
+    const pageLevelErrorMessageAfterClear = employeeDisplayComponent['pageLevelErrorMessage']();
+
+    // Assert
+    expect(pageLevelErrorMessageBeforeClear).not.toBeNull();
+    expect(pageLevelErrorMessageAfterClear).toBeNull();
   });
   //#endregion
 
   //#region Per-card error lookup
 
   it('getOrderCardErrorMessage_When_NoErrorForOrder_Should_ReturnNull', () => {
-    expect(component['getOrderCardErrorMessage'](readyForPickupOrder)).toBeNull();
+    // Arrange
+    const readyForPickupOrderTransactionId = 2;
+    const readyForPickupOrderId = 22;
+
+    const orderReadyForPickup = {
+      transactionId: readyForPickupOrderTransactionId,
+      id: readyForPickupOrderId,
+      status: OrderStatus.ReadyForPickup,
+    };
+
+    // Act
+    const cardErrorMessageWhenNoErrorWasSet = employeeDisplayComponent['getOrderCardErrorMessage'](orderReadyForPickup);
+
+    // Assert
+    expect(cardErrorMessageWhenNoErrorWasSet).toBeNull();
   });
   //#endregion
 });

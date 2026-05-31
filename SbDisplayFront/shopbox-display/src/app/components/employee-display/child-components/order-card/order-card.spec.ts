@@ -1,222 +1,455 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { OrderCard } from './order-card';
-import { Order, OrderItem, OrderStatus } from '../../../../generated/orders';
+import { OrderItem, OrderStatus } from '../../../../generated/orders';
 
 describe('OrderCard', () => {
-  let component: OrderCard;
-  let fixture: ComponentFixture<OrderCard>;
-
-  /** Status values emitted by the card during a test, captured in order. */
-  let emittedStatuses: OrderStatus[];
-
-  const millisecondsPerMinute = 60000;
-
-  /**
-   * Builds a fake PointerEvent carrying only the fields the swipe controller actually reads
-   * (clientX, pointerId, and a currentTarget that can capture the pointer). jsdom has no real
-   * PointerEvent / setPointerCapture, so we stand one in instead of dispatching a DOM event.
-   */
-  function pointerEventAtX(clientX: number): PointerEvent {
-    return {
-      clientX,
-      pointerId: 1,
-      currentTarget: { setPointerCapture: () => undefined },
-    } as unknown as PointerEvent;
-  }
-
-  /** Renders the card for the given order and starts capturing its statusChange output. */
-  function renderCardForOrder(order: Order): void {
-    fixture.componentRef.setInput('order', order);
-    fixture.detectChanges();
-  }
+  let orderCardComponent: OrderCard;
+  let orderCardFixture: ComponentFixture<OrderCard>;
+  let statusesEmittedByOrderCard: OrderStatus[];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [OrderCard],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(OrderCard);
-    component = fixture.componentInstance;
+    orderCardFixture = TestBed.createComponent(OrderCard);
+    orderCardComponent = orderCardFixture.componentInstance;
 
-    emittedStatuses = [];
-    component.statusChange.subscribe(status => emittedStatuses.push(status));
+    statusesEmittedByOrderCard = [];
+    orderCardComponent.statusChange.subscribe((status) => statusesEmittedByOrderCard.push(status));
   });
 
   it('should create', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const orderUnderPreparation = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
 
-    expect(component).toBeTruthy();
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparation);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    // Assert
+    expect(orderCardComponent).toBeTruthy();
   });
 
   //#region Double-click advances status
 
   it('onOrderCardDoubleClick_When_OrderIsUnderPreparation_Should_EmitReadyForPickup', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const orderUnderPreparation = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
 
-    const cardHeader = fixture.nativeElement.querySelector('.card-header') as HTMLElement;
-    cardHeader.dispatchEvent(new MouseEvent('dblclick'));
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparation);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([OrderStatus.ReadyForPickup]);
+    const orderCardHeaderElement = orderCardFixture.nativeElement.querySelector('.card-header') as HTMLElement;
+
+    // Act
+    orderCardHeaderElement.dispatchEvent(new MouseEvent('dblclick'));
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([OrderStatus.ReadyForPickup]);
   });
 
   it('onOrderCardDoubleClick_When_OrderIsReadyForPickup_Should_EmitCompleted', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.ReadyForPickup });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const orderReadyForPickup = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.ReadyForPickup,
+    };
 
-    const cardHeader = fixture.nativeElement.querySelector('.card-header') as HTMLElement;
-    cardHeader.dispatchEvent(new MouseEvent('dblclick'));
+    orderCardFixture.componentRef.setInput('order', orderReadyForPickup);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([OrderStatus.Completed]);
+    const orderCardHeaderElement = orderCardFixture.nativeElement.querySelector('.card-header') as HTMLElement;
+
+    // Act
+    orderCardHeaderElement.dispatchEvent(new MouseEvent('dblclick'));
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([OrderStatus.Completed]);
   });
 
   it('onOrderCardDoubleClick_When_OrderIsCompleted_Should_EmitNothing', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.Completed });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const completedOrder = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.Completed,
+    };
 
-    const cardHeader = fixture.nativeElement.querySelector('.card-header') as HTMLElement;
-    cardHeader.dispatchEvent(new MouseEvent('dblclick'));
+    orderCardFixture.componentRef.setInput('order', completedOrder);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([]);
+    const orderCardHeaderElement = orderCardFixture.nativeElement.querySelector('.card-header') as HTMLElement;
+
+    // Act
+    orderCardHeaderElement.dispatchEvent(new MouseEvent('dblclick'));
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([]);
   });
   //#endregion
 
   //#region Swipe-to-revert
 
   it('swipe_When_ReadyForPickupAndDraggedPastThreshold_Should_EmitUnderPreparation', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.ReadyForPickup });
-    const cardSwipe = component['cardSwipe'];
+    // Arrange
+    // jsdom has no real PointerEvent / setPointerCapture, so we build stub events.
+    const testOrderTransactionId = 1;
+    const orderReadyForPickup = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const pointerStartHorizontalScreenPositionInPixels = 200;
+    const pointerEndHorizontalScreenPositionPastRevertThresholdInPixels = 40;
+    const stubPointerId = 1;
 
-    // Press at x=200, drag left to x=40 (offset -160px, past the 100px revert threshold), release.
-    cardSwipe.onPointerDown(pointerEventAtX(200));
-    cardSwipe.onPointerMove(pointerEventAtX(40));
-    cardSwipe.onPointerEnd(pointerEventAtX(40));
+    orderCardFixture.componentRef.setInput('order', orderReadyForPickup);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([OrderStatus.UnderPreparation]);
+    const orderCardSwipeController = orderCardComponent['cardSwipe'];
+    const pointerDownEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerStartHorizontalScreenPositionInPixels,
+      stubPointerId,
+    );
+    const pointerEndEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerEndHorizontalScreenPositionPastRevertThresholdInPixels,
+      stubPointerId,
+    );
+
+    // Act
+    orderCardSwipeController.onPointerDown(pointerDownEvent);
+    orderCardSwipeController.onPointerMove(pointerEndEvent);
+    orderCardSwipeController.onPointerEnd(pointerEndEvent);
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([OrderStatus.UnderPreparation]);
   });
 
   it('swipe_When_ReadyForPickupButDraggedBelowThreshold_Should_EmitNothing', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.ReadyForPickup });
-    const cardSwipe = component['cardSwipe'];
+    // Arrange
+    // jsdom has no real PointerEvent / setPointerCapture, so we build stub events.
+    const testOrderTransactionId = 1;
+    const orderReadyForPickup = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.ReadyForPickup,
+    };
+    const pointerStartHorizontalScreenPositionInPixels = 200;
+    const pointerEndHorizontalScreenPositionBelowRevertThresholdInPixels = 170;
+    const stubPointerId = 1;
 
-    // Drag left only 30px — counts as a swipe but never reaches the 100px revert threshold.
-    cardSwipe.onPointerDown(pointerEventAtX(200));
-    cardSwipe.onPointerMove(pointerEventAtX(170));
-    cardSwipe.onPointerEnd(pointerEventAtX(170));
+    orderCardFixture.componentRef.setInput('order', orderReadyForPickup);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([]);
+    const orderCardSwipeController = orderCardComponent['cardSwipe'];
+    const pointerDownEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerStartHorizontalScreenPositionInPixels,
+      stubPointerId,
+    );
+    const pointerReleaseEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerEndHorizontalScreenPositionBelowRevertThresholdInPixels,
+      stubPointerId,
+    );
+
+    // Act
+    orderCardSwipeController.onPointerDown(pointerDownEvent);
+    orderCardSwipeController.onPointerMove(pointerReleaseEvent);
+    orderCardSwipeController.onPointerEnd(pointerReleaseEvent);
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([]);
   });
 
   it('swipe_When_OrderIsNotSwipeable_Should_EmitNothing', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation });
-    const cardSwipe = component['cardSwipe'];
+    // Arrange
+    // jsdom has no real PointerEvent / setPointerCapture, so we stand stub events in.
+    const testOrderTransactionId = 1;
+    const orderUnderPreparation = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const pointerStartHorizontalScreenPositionInPixels = 200;
+    const pointerEndHorizontalScreenPositionPastRevertThresholdInPixels = 40;
+    const stubPointerId = 1;
 
-    cardSwipe.onPointerDown(pointerEventAtX(200));
-    cardSwipe.onPointerMove(pointerEventAtX(40));
-    cardSwipe.onPointerEnd(pointerEventAtX(40));
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparation);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([]);
+    const orderCardSwipeController = orderCardComponent['cardSwipe'];
+    const pointerDownEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerStartHorizontalScreenPositionInPixels,
+      stubPointerId,
+    );
+    const pointerEndEvent = buildStubPointerEventAtHorizontalScreenPositionInPixels(
+      pointerEndHorizontalScreenPositionPastRevertThresholdInPixels,
+      stubPointerId,
+    );
+
+    // Act
+    orderCardSwipeController.onPointerDown(pointerDownEvent);
+    orderCardSwipeController.onPointerMove(pointerEndEvent);
+    orderCardSwipeController.onPointerEnd(pointerEndEvent);
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([]);
   });
   //#endregion
 
   //#region Card colour classes
 
   it('orderCardClasses_When_OrderIsReadyForPickup_Should_ApplyReadyClass', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.ReadyForPickup });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const orderReadyForPickup = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.ReadyForPickup,
+    };
 
-    const card = fixture.nativeElement.querySelector('.order-card') as HTMLElement;
-    expect(card.classList.contains('order-card-ready')).toBe(true);
+    orderCardFixture.componentRef.setInput('order', orderReadyForPickup);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    const orderCardElement = orderCardFixture.nativeElement.querySelector('.order-card') as HTMLElement;
+
+    // Assert
+    expect(orderCardElement.classList.contains('order-card-ready')).toBe(true);
   });
 
   it('orderCardClasses_When_OrderIsCompleted_Should_ApplyCompletedClass', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.Completed });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const completedOrder = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.Completed,
+    };
 
-    const card = fixture.nativeElement.querySelector('.order-card') as HTMLElement;
-    expect(card.classList.contains('order-card-completed')).toBe(true);
+    orderCardFixture.componentRef.setInput('order', completedOrder);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    const orderCardElement = orderCardFixture.nativeElement.querySelector('.order-card') as HTMLElement;
+
+    // Assert
+    expect(orderCardElement.classList.contains('order-card-completed')).toBe(true);
   });
 
   it('orderCardClasses_When_UnderPreparationOrderIsOld_Should_ApplyTooOldClass', () => {
-    renderCardForOrder({
-      transactionId: 1,
+    // Arrange
+    const testOrderTransactionId = 1;
+    const millisecondsPerMinute = 60000;
+    const orderAgeInMinutesForOldOrder = 10;
+    const orderUnderPreparationCreatedTenMinutesAgo = {
+      transactionId: testOrderTransactionId,
       status: OrderStatus.UnderPreparation,
-      creationTime: new Date(Date.now() - 10 * millisecondsPerMinute).toISOString(),
-    });
+      creationTime: new Date(Date.now() - orderAgeInMinutesForOldOrder * millisecondsPerMinute).toISOString(),
+    };
 
-    const card = fixture.nativeElement.querySelector('.order-card') as HTMLElement;
-    expect(card.classList.contains('order-card-too-old')).toBe(true);
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparationCreatedTenMinutesAgo);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    const orderCardElement = orderCardFixture.nativeElement.querySelector('.order-card') as HTMLElement;
+
+    // Assert
+    expect(orderCardElement.classList.contains('order-card-too-old')).toBe(true);
   });
 
   it('orderCardClasses_When_ReadyForPickupOrderIsOld_Should_NotApplyTooOldClass', () => {
-    renderCardForOrder({
-      transactionId: 1,
+    // Arrange
+    const testOrderTransactionId = 1;
+    const millisecondsPerMinute = 60000;
+    const orderAgeInMinutesForOldOrder = 10;
+    const orderReadyForPickupCreatedTenMinutesAgo = {
+      transactionId: testOrderTransactionId,
       status: OrderStatus.ReadyForPickup,
-      creationTime: new Date(Date.now() - 10 * millisecondsPerMinute).toISOString(),
-    });
+      creationTime: new Date(Date.now() - orderAgeInMinutesForOldOrder * millisecondsPerMinute).toISOString(),
+    };
 
-    const card = fixture.nativeElement.querySelector('.order-card') as HTMLElement;
-    expect(card.classList.contains('order-card-too-old')).toBe(false);
+    orderCardFixture.componentRef.setInput('order', orderReadyForPickupCreatedTenMinutesAgo);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    const orderCardElement = orderCardFixture.nativeElement.querySelector('.order-card') as HTMLElement;
+
+    // Assert
+    expect(orderCardElement.classList.contains('order-card-too-old')).toBe(false);
   });
   //#endregion
 
   //#region Explicit status buttons (Completed tab)
 
   it('statusButtons_When_CompletedOrderPrepButtonClicked_Should_EmitUnderPreparation', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.Completed });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const completedOrder = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.Completed,
+    };
 
-    const prepButton = fixture.nativeElement.querySelector('.order-btn-prep') as HTMLButtonElement;
-    prepButton.click();
+    orderCardFixture.componentRef.setInput('order', completedOrder);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([OrderStatus.UnderPreparation]);
+    const preparationStatusButton = orderCardFixture.nativeElement.querySelector('.order-btn-prep') as HTMLButtonElement;
+
+    // Act
+    preparationStatusButton.click();
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([OrderStatus.UnderPreparation]);
   });
 
   it('statusButtons_When_CompletedOrderReadyButtonClicked_Should_EmitReadyForPickup', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.Completed });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const completedOrder = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.Completed,
+    };
 
-    const readyButton = fixture.nativeElement.querySelector('.order-btn-ready') as HTMLButtonElement;
-    readyButton.click();
+    orderCardFixture.componentRef.setInput('order', completedOrder);
+    orderCardFixture.detectChanges();
 
-    expect(emittedStatuses).toEqual([OrderStatus.ReadyForPickup]);
+    const readyForPickupStatusButton = orderCardFixture.nativeElement.querySelector(
+      '.order-btn-ready',
+    ) as HTMLButtonElement;
+
+    // Act
+    readyForPickupStatusButton.click();
+
+    // Assert
+    expect(statusesEmittedByOrderCard).toEqual([OrderStatus.ReadyForPickup]);
   });
   //#endregion
 
   //#region Card error message
 
   it('errorMessage_When_Provided_Should_RenderErrorAlert', () => {
-    fixture.componentRef.setInput('order', { transactionId: 1, status: OrderStatus.UnderPreparation });
-    fixture.componentRef.setInput('errorMessage', 'Kunne ikke opdatere status. Prøv igen.');
-    fixture.detectChanges();
+    // Arrange
+    const testOrderTransactionId = 1;
+    const orderUnderPreparation = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+    };
+    const expectedCardErrorMessage = 'Kunne ikke opdatere status. Prøv igen.';
 
-    const alert = fixture.nativeElement.querySelector('.alert.alert-danger') as HTMLElement;
-    expect(alert.textContent).toContain('Kunne ikke opdatere status. Prøv igen.');
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparation);
+    orderCardFixture.componentRef.setInput('errorMessage', expectedCardErrorMessage);
+
+    // Act
+    orderCardFixture.detectChanges();
+
+    const errorAlertElement = orderCardFixture.nativeElement.querySelector('.alert.alert-danger') as HTMLElement;
+
+    // Assert
+    expect(errorAlertElement.textContent).toContain(expectedCardErrorMessage);
   });
   //#endregion
 
   //#region Collapsed item preview
 
   it('getVisibleOrderItems_When_CollapsedAndMoreThanPreviewLimit_Should_ReturnOnlyPreviewItems', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation, items: buildOrderItems(6) });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const maximumPreviewOrderItemCount = 4;
+    const totalOrderItemCountAbovePreviewLimit = 6;
+    const orderItemsAbovePreviewLimit = buildTestOrderItemsWithCount(totalOrderItemCountAbovePreviewLimit);
+    const orderUnderPreparationWithManyItems = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+      items: orderItemsAbovePreviewLimit,
+    };
 
-    expect(component['getVisibleOrderItems']().length).toBe(4);
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparationWithManyItems);
+    orderCardFixture.detectChanges();
+
+    // Act
+    const visibleOrderItemsInCollapsedCard = orderCardComponent['getVisibleOrderItems']();
+
+    // Assert
+    expect(visibleOrderItemsInCollapsedCard.length).toBe(maximumPreviewOrderItemCount);
   });
 
   it('getVisibleOrderItems_When_Expanded_Should_ReturnAllItems', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation, items: buildOrderItems(6) });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const totalOrderItemCountAbovePreviewLimit = 6;
+    const orderItemsAbovePreviewLimit = buildTestOrderItemsWithCount(totalOrderItemCountAbovePreviewLimit);
+    const orderUnderPreparationWithManyItems = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+      items: orderItemsAbovePreviewLimit,
+    };
 
-    component['isCardExpanded'].set(true);
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparationWithManyItems);
+    orderCardFixture.detectChanges();
 
-    expect(component['getVisibleOrderItems']().length).toBe(6);
+    // Act
+    orderCardComponent['isCardExpanded'].set(true);
+    const visibleOrderItemsInExpandedCard = orderCardComponent['getVisibleOrderItems']();
+
+    // Assert
+    expect(visibleOrderItemsInExpandedCard.length).toBe(totalOrderItemCountAbovePreviewLimit);
   });
 
   it('getHiddenOrderItemCount_When_MoreItemsThanPreviewLimit_Should_ReturnHiddenCount', () => {
-    renderCardForOrder({ transactionId: 1, status: OrderStatus.UnderPreparation, items: buildOrderItems(6) });
+    // Arrange
+    const testOrderTransactionId = 1;
+    const maximumPreviewOrderItemCount = 4;
+    const totalOrderItemCountAbovePreviewLimit = 6;
+    const expectedHiddenOrderItemCount = totalOrderItemCountAbovePreviewLimit - maximumPreviewOrderItemCount;
+    const orderItemsAbovePreviewLimit = buildTestOrderItemsWithCount(totalOrderItemCountAbovePreviewLimit);
+    const orderUnderPreparationWithManyItems = {
+      transactionId: testOrderTransactionId,
+      status: OrderStatus.UnderPreparation,
+      items: orderItemsAbovePreviewLimit,
+    };
 
-    expect(component['getHiddenOrderItemCount']()).toBe(2);
+    orderCardFixture.componentRef.setInput('order', orderUnderPreparationWithManyItems);
+    orderCardFixture.detectChanges();
+
+    // Act
+    const hiddenOrderItemCountInCollapsedCard = orderCardComponent['getHiddenOrderItemCount']();
+
+    // Assert
+    expect(hiddenOrderItemCountInCollapsedCard).toBe(expectedHiddenOrderItemCount);
   });
   //#endregion
 });
 
-/** Builds the requested number of simple order items for preview/overflow tests. */
-function buildOrderItems(count: number): OrderItem[] {
-  return Array.from({ length: count }, (_unused, index) => ({
-    quantity: 1,
-    item: { id: index + 1, name: `Vare ${index + 1}` },
-  }));
+function buildStubPointerEventAtHorizontalScreenPositionInPixels(
+  horizontalScreenPositionInPixels: number,
+  pointerId: number,
+): PointerEvent {
+  return {
+    clientX: horizontalScreenPositionInPixels,
+    pointerId,
+    currentTarget: { setPointerCapture: () => undefined },
+  } as unknown as PointerEvent;
+}
+
+function buildTestOrderItemsWithCount(orderItemCount: number): OrderItem[] {
+  const testOrderItems: OrderItem[] = [];
+  const firstIndex = 1;
+
+  for (let currentIndex = firstIndex; currentIndex <= orderItemCount; currentIndex++) {
+    testOrderItems.push({
+      quantity: 1,
+      item: { id: currentIndex, name: `Vare ${currentIndex}` },
+    });
+  }
+
+  return testOrderItems;
 }

@@ -11,9 +11,9 @@ import { Order, OrderStatus } from '../../generated/orders';
  * nothing, but lets the page load in tests without crashing.
  */
 class ResizeObserverStub implements ResizeObserver {
-  observe(): void {}
-  unobserve(): void {}
-  disconnect(): void {}
+  observe(): void { }
+  unobserve(): void { }
+  disconnect(): void { }
 }
 
 /**
@@ -26,81 +26,171 @@ class OrderDisplayStateServiceStub {
 }
 
 describe('CustomerDisplay', () => {
-  let component: CustomerDisplay;
-  let fixture: ComponentFixture<CustomerDisplay>;
-  let orderStateStub: OrderDisplayStateServiceStub;
-
-  // Defaults seeded by the component before any measurement: left = 5 cols * 3 rows, right = 3 cols * 2 rows.
-  const defaultLeftVisibleCount = 15;
-  const defaultRightVisibleCount = 6;
+  let customerDisplayComponent: CustomerDisplay;
+  let customerDisplayFixture: ComponentFixture<CustomerDisplay>;
+  let orderDisplayStateServiceStub: OrderDisplayStateServiceStub;
 
   beforeEach(async () => {
     globalThis.ResizeObserver = ResizeObserverStub;
-    orderStateStub = new OrderDisplayStateServiceStub();
+    orderDisplayStateServiceStub = new OrderDisplayStateServiceStub();
 
     await TestBed.configureTestingModule({
       imports: [CustomerDisplay],
-      providers: [{ provide: OrderDisplayStateService, useValue: orderStateStub }],
+      providers: [{ provide: OrderDisplayStateService, useValue: orderDisplayStateServiceStub }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CustomerDisplay);
-    component = fixture.componentInstance;
+    customerDisplayFixture = TestBed.createComponent(CustomerDisplay);
+    customerDisplayComponent = customerDisplayFixture.componentInstance;
   });
 
   it('should create', () => {
-    fixture.detectChanges();
+    // Arrange
+    // Component, fixture, and order-state stub are prepared in beforeEach.
 
-    expect(component).toBeTruthy();
+    // Act
+    customerDisplayFixture.detectChanges();
+
+    // Assert
+    expect(customerDisplayComponent).toBeTruthy();
   });
 
   //#region Left column (Tilbereder) overflow
 
   it('hasLeftOverflow_When_MorePreparingOrdersThanFit_Should_ReturnTrue', () => {
-    orderStateStub.preparingOrders.set(buildOrders(defaultLeftVisibleCount + 1, OrderStatus.UnderPreparation));
+    // Arrange
+    const leftGridColumnsPerRow = 5;
+    const initialLeftGridVisibleRowCount = 3;
+    const initialLeftGridVisibleOrderCount = leftGridColumnsPerRow * initialLeftGridVisibleRowCount;
+    const singleOrderBeyondVisibleCapacity = 1;
+    const preparingOrderCountExceedingLeftGridCapacity = initialLeftGridVisibleOrderCount + singleOrderBeyondVisibleCapacity;
+    const preparingOrdersExceedingLeftGridCapacity = buildTestOrdersWithCountAndStatus(
+      preparingOrderCountExceedingLeftGridCapacity,
+      OrderStatus.UnderPreparation,
+    );
+    orderDisplayStateServiceStub.preparingOrders.set(preparingOrdersExceedingLeftGridCapacity);
 
-    expect(component['hasLeftOverflow']()).toBe(true);
+    // Act
+    const leftColumnHasHiddenPreparingOrders = customerDisplayComponent['hasLeftOverflow']();
+
+    // Assert
+    expect(leftColumnHasHiddenPreparingOrders).toBe(true);
   });
 
   it('hasLeftOverflow_When_FewerPreparingOrdersThanFit_Should_ReturnFalse', () => {
-    orderStateStub.preparingOrders.set(buildOrders(3, OrderStatus.UnderPreparation));
+    // Arrange
+    const preparingOrderCountBelowLeftGridCapacity = 3;
+    const preparingOrdersBelowLeftGridCapacity = buildTestOrdersWithCountAndStatus(
+      preparingOrderCountBelowLeftGridCapacity,
+      OrderStatus.UnderPreparation,
+    );
 
-    expect(component['hasLeftOverflow']()).toBe(false);
+    orderDisplayStateServiceStub.preparingOrders.set(preparingOrdersBelowLeftGridCapacity);
+
+    // Act
+    const leftColumnHasHiddenPreparingOrders = customerDisplayComponent['hasLeftOverflow']();
+
+    // Assert
+    expect(leftColumnHasHiddenPreparingOrders).toBe(false);
   });
 
   it('leftVisible_When_MorePreparingOrdersThanFit_Should_CapAtVisibleCount', () => {
-    orderStateStub.preparingOrders.set(buildOrders(defaultLeftVisibleCount + 5, OrderStatus.UnderPreparation));
+    // Arrange
+    const leftGridColumnsPerRow = 5;
+    const initialLeftGridVisibleRowCount = 3;
+    const initialLeftGridVisibleOrderCount = leftGridColumnsPerRow * initialLeftGridVisibleRowCount;
+    const fiveOrdersBeyondVisibleCapacity = 5;
+    const preparingOrderCountWellAboveLeftGridCapacity = initialLeftGridVisibleOrderCount + fiveOrdersBeyondVisibleCapacity;
+    const preparingOrdersWellAboveLeftGridCapacity = buildTestOrdersWithCountAndStatus(
+      preparingOrderCountWellAboveLeftGridCapacity,
+      OrderStatus.UnderPreparation,
+    );
 
-    expect(component['leftVisible']().length).toBe(defaultLeftVisibleCount);
+    orderDisplayStateServiceStub.preparingOrders.set(preparingOrdersWellAboveLeftGridCapacity);
+
+    // Act
+    const visiblePreparingOrdersInLeftColumn = customerDisplayComponent['leftVisible']();
+
+    // Assert
+    expect(visiblePreparingOrdersInLeftColumn.length).toBe(initialLeftGridVisibleOrderCount);
   });
   //#endregion
 
   //#region Right column (Afhent) overflow
 
   it('hasRightOverflow_When_MoreReadyOrdersThanFit_Should_ReturnTrue', () => {
-    orderStateStub.readyForPickupOrders.set(buildOrders(defaultRightVisibleCount + 1, OrderStatus.ReadyForPickup));
+    // Arrange
+    const rightGridColumnsPerRow = 3;
+    const initialRightGridVisibleRowCount = 2;
+    const initialRightGridVisibleOrderCount = rightGridColumnsPerRow * initialRightGridVisibleRowCount;
+    const singleOrderBeyondVisibleCapacity = 1;
+    const readyForPickupOrderCountExceedingRightGridCapacity = initialRightGridVisibleOrderCount + singleOrderBeyondVisibleCapacity;
+    const readyForPickupOrdersExceedingRightGridCapacity = buildTestOrdersWithCountAndStatus(
+      readyForPickupOrderCountExceedingRightGridCapacity,
+      OrderStatus.ReadyForPickup,
+    );
 
-    expect(component['hasRightOverflow']()).toBe(true);
+    orderDisplayStateServiceStub.readyForPickupOrders.set(readyForPickupOrdersExceedingRightGridCapacity);
+
+    // Act
+    const rightColumnHasHiddenReadyForPickupOrders = customerDisplayComponent['hasRightOverflow']();
+
+    // Assert
+    expect(rightColumnHasHiddenReadyForPickupOrders).toBe(true);
   });
 
   it('hasRightOverflow_When_FewerReadyOrdersThanFit_Should_ReturnFalse', () => {
-    orderStateStub.readyForPickupOrders.set(buildOrders(2, OrderStatus.ReadyForPickup));
+    // Arrange
+    const readyForPickupOrderCountBelowRightGridCapacity = 2;
+    const readyForPickupOrdersBelowRightGridCapacity = buildTestOrdersWithCountAndStatus(
+      readyForPickupOrderCountBelowRightGridCapacity,
+      OrderStatus.ReadyForPickup,
+    );
 
-    expect(component['hasRightOverflow']()).toBe(false);
+    orderDisplayStateServiceStub.readyForPickupOrders.set(readyForPickupOrdersBelowRightGridCapacity);
+
+    // Act
+    const rightColumnHasHiddenReadyForPickupOrders = customerDisplayComponent['hasRightOverflow']();
+
+    // Assert
+    expect(rightColumnHasHiddenReadyForPickupOrders).toBe(false);
   });
 
   it('rightVisible_When_MoreReadyOrdersThanFit_Should_CapAtVisibleCount', () => {
-    orderStateStub.readyForPickupOrders.set(buildOrders(defaultRightVisibleCount + 5, OrderStatus.ReadyForPickup));
+    // Arrange
+    const rightGridColumnsPerRow = 3;
+    const initialRightGridVisibleRowCount = 2;
+    const initialRightGridVisibleOrderCount = rightGridColumnsPerRow * initialRightGridVisibleRowCount;
+    const fiveOrdersBeyondVisibleCapacity = 5;
+    const readyForPickupOrderCountWellAboveRightGridCapacity = initialRightGridVisibleOrderCount + fiveOrdersBeyondVisibleCapacity;
+    const readyForPickupOrdersWellAboveRightGridCapacity = buildTestOrdersWithCountAndStatus(
+      readyForPickupOrderCountWellAboveRightGridCapacity,
+      OrderStatus.ReadyForPickup,
+    );
 
-    expect(component['rightVisible']().length).toBe(defaultRightVisibleCount);
+    orderDisplayStateServiceStub.readyForPickupOrders.set(readyForPickupOrdersWellAboveRightGridCapacity);
+
+    // Act
+    const visibleReadyForPickupOrdersInRightColumn = customerDisplayComponent['rightVisible']();
+
+    // Assert
+    expect(visibleReadyForPickupOrdersInRightColumn.length).toBe(initialRightGridVisibleOrderCount);
   });
   //#endregion
 });
 
-/** Builds the requested number of orders with unique ids and the given status. */
-function buildOrders(count: number, status: OrderStatus): Order[] {
-  return Array.from({ length: count }, (_unused, index) => ({
-    transactionId: index + 1,
-    id: index + 1,
-    status,
-  }));
+function buildTestOrdersWithCountAndStatus(orderCount: number, orderStatus: OrderStatus): Order[] {
+  const testOrders: Order[] = [];
+  const firstIndex = 1;
+
+  for (
+    let currentIndex = firstIndex; currentIndex <= orderCount; currentIndex++
+  ) {
+    testOrders.push({
+      transactionId: currentIndex,
+      id: currentIndex,
+      status: orderStatus,
+    });
+  }
+
+  return testOrders;
 }

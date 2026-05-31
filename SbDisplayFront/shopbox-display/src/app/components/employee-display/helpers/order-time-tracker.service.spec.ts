@@ -4,48 +4,103 @@ import { Order } from '../../../generated/orders';
 
 describe('OrderTimeTracker', () => {
   let orderTimeTracker: OrderTimeTracker;
-  const millisecondsPerMinute = 60000;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
     orderTimeTracker = TestBed.inject(OrderTimeTracker);
   });
 
-  it('getElapsedMinutesSinceOrderCreation_When_NoCreationTimeProvided_Should_ReturnZero', () => {
-    const order: Order = { transactionId: 1 };
+  it('should create', () => {
+    // Arrange
+    // OrderTimeTracker is injected in beforeEach.
 
-    expect(orderTimeTracker.getElapsedMinutesSinceOrderCreation(order)).toBe(0);
+    // Act
+    // (none)
+
+    // Assert
+    expect(orderTimeTracker).toBeTruthy();
+  });
+
+  //#region getElapsedMinutesSinceOrderCreation
+
+  it('getElapsedMinutesSinceOrderCreation_When_NoCreationTimeProvided_Should_ReturnZero', () => {
+    // Arrange
+    const testOrderTransactionId = 1;
+    const expectedElapsedMinutesSinceOrderCreation = 0;
+
+    const orderWithoutCreationTime: Order = {
+      transactionId: testOrderTransactionId,
+    };
+
+    // Act
+    const elapsedMinutesSinceOrderCreation = orderTimeTracker.getElapsedMinutesSinceOrderCreation(orderWithoutCreationTime);
+
+    // Assert
+    expect(elapsedMinutesSinceOrderCreation).toBe(expectedElapsedMinutesSinceOrderCreation);
   });
 
   it('getElapsedMinutesSinceOrderCreation_When_CreatedTenMinutesAgo_Should_ReturnTen', () => {
-    // orderTimeTrack.currentTimestampMilliseconds() is used to get the same "now" the app uses, so the order is exactly 10 minutes old—not off by a tiny
-    // sliver of time that can pass while the test is setting up.
+    // Arrange
+    // currentTimestampMilliseconds() is the same "now" the service uses, so the order is exactly
+    // ten minutes old—not off by a sliver of time that can pass while the test is setting up.
+    const testOrderTransactionId = 1;
+    const millisecondsPerMinute = 60000;
+    const orderAgeInMinutesForTest = 10;
+    const expectedElapsedMinutesSinceOrderCreation = 10;
     const referenceNowMilliseconds = orderTimeTracker.currentTimestampMilliseconds();
-    const order: Order = {
-      transactionId: 1,
-      creationTime: new Date(referenceNowMilliseconds - 10 * millisecondsPerMinute).toISOString(),
+    const orderCreationTimestampMilliseconds = referenceNowMilliseconds - orderAgeInMinutesForTest * millisecondsPerMinute;
+    
+    const orderCreatedTenMinutesAgo: Order = {
+      transactionId: testOrderTransactionId,
+      creationTime: new Date(orderCreationTimestampMilliseconds).toISOString(),
     };
 
-    expect(orderTimeTracker.getElapsedMinutesSinceOrderCreation(order)).toBe(10);
+    // Act
+    const elapsedMinutesSinceOrderCreation =
+      orderTimeTracker.getElapsedMinutesSinceOrderCreation(orderCreatedTenMinutesAgo);
+
+    // Assert
+    expect(elapsedMinutesSinceOrderCreation).toBe(expectedElapsedMinutesSinceOrderCreation);
   });
+  //#endregion
+
+  //#region isOrderConsideredOld
 
   it('isOrderConsideredOld_When_CreatedTenMinutesAgo_Should_ReturnTrue', () => {
+    // Arrange
+    const testOrderTransactionId = 1;
+    const millisecondsPerMinute = 60000;
+    const orderAgeInMinutesAboveOldThreshold = 10;
     const referenceNowMilliseconds = orderTimeTracker.currentTimestampMilliseconds();
-    const order: Order = {
-      transactionId: 1,
-      creationTime: new Date(referenceNowMilliseconds - 10 * millisecondsPerMinute).toISOString(),
+    const orderCreationTimestampMilliseconds = referenceNowMilliseconds - orderAgeInMinutesAboveOldThreshold * millisecondsPerMinute;
+
+    const orderCreatedTenMinutesAgo: Order = {
+      transactionId: testOrderTransactionId,
+      creationTime: new Date(orderCreationTimestampMilliseconds).toISOString(),
     };
 
-    expect(orderTimeTracker.isOrderConsideredOld(order)).toBe(true);
+    // Act
+    const isOrderConsideredOld = orderTimeTracker.isOrderConsideredOld(orderCreatedTenMinutesAgo);
+
+    // Assert
+    expect(isOrderConsideredOld).toBe(true);
   });
 
   it('isOrderConsideredOld_When_JustCreated_Should_ReturnFalse', () => {
+    // Arrange
+    const testOrderTransactionId = 1;
     const referenceNowMilliseconds = orderTimeTracker.currentTimestampMilliseconds();
-    const order: Order = {
-      transactionId: 1,
+    
+    const orderCreatedAtCurrentTimestamp: Order = {
+      transactionId: testOrderTransactionId,
       creationTime: new Date(referenceNowMilliseconds).toISOString(),
     };
 
-    expect(orderTimeTracker.isOrderConsideredOld(order)).toBe(false);
+    // Act
+    const isOrderConsideredOld = orderTimeTracker.isOrderConsideredOld(orderCreatedAtCurrentTimestamp);
+
+    // Assert
+    expect(isOrderConsideredOld).toBe(false);
   });
+  //#endregion
 });
