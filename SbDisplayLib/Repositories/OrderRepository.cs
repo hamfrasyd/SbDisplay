@@ -7,15 +7,29 @@ using System.Data;
 using SbDisplayLib.Common;
 namespace SbDisplayLib.Repositories
 {
+    /// <summary>
+    /// Repository responsible for handling database operations related to orders.
+    /// </summary>
     public class OrderRepository : IOrderRepository
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrderRepository"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration used to retrieve the database connection string.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the connection string named <c>DefaultConnection</c> is not configured.</exception>
         public OrderRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
         }
 
+        /// <summary>
+        /// Creates a new order in the database.
+        /// </summary>
+        /// <param name="newOrder">The order that should be created.</param>
+        /// <returns>A <see cref="Result{T}"/> containing the created <see cref="Order"/> if the operation succeeds,
+        /// or an error code and message if the operation fails.</returns>
         public Result<Order> Create(Order newOrder)
         {
             try
@@ -71,6 +85,13 @@ namespace SbDisplayLib.Repositories
             }
         }
 
+        /// <summary>
+        /// Creates a relationship between an order and an order item in the database.
+        /// </summary>
+        /// <param name="order">The order that the item should be related to.</param>
+        /// <param name="orderItem">The order item that should be connected to the order.</param>
+        /// <returns>A <see cref="Result{T}"/> containing the created <see cref="OrderItem"/> relation if the operation succeeds,
+        /// or an error code and message if the operation fails.</returns>
         public Result<OrderItem> CreateItemOrderRelation(Order order, OrderItem orderItem)
         {
             try
@@ -113,6 +134,11 @@ namespace SbDisplayLib.Repositories
             }
         }
 
+        /// <summary>
+        /// Retrieves all orders from the database, including their associated items.
+        /// </summary>
+        /// <returns>A <see cref="Result{T}"/> containing a list of <see cref="Order"/> objects if the operation succeeds,
+        /// or an error code and message if the operation fails.</returns>
         public Result<List<Order>> GetAllWithItems()
         {
             try
@@ -184,6 +210,13 @@ namespace SbDisplayLib.Repositories
             }
         }
 
+        /// <summary>
+        /// Updates the status of an existing order based on its transaction ID.
+        /// </summary>
+        /// <param name="transactionId">The transaction ID of the order that should be updated.</param>
+        /// <param name="statusId">The new status that should be assigned to the order.</param>
+        /// <returns>A <see cref="Result{T}"/> containing the updated <see cref="Order"/> if the operation succeeds,
+        /// or an error code and message if the operation fails.</returns>
         public Result<Order> UpdateOrderStatus(int transactionId, OrderStatus statusId)
         {
             try
