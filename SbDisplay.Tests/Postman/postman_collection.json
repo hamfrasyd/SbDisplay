@@ -72,6 +72,170 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "PUT 200 - Valid status update",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test('Response contains updated order', function () {",
+							"    const json = pm.response.json();",
+							"    pm.expect(json).to.be.an('object');",
+							"    pm.expect(json).to.have.property('transactionId');",
+							"    pm.expect(json.transactionId).to.eql(1);",
+							"		 pm.expect(json.status).to.eql(2);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:5000/api/Orders/1",
+					"protocol": "http",
+					"host": [ "localhost" ],
+					"port": "5000",
+					"path": [ "api", "Orders", "1" ]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{ \"status\": 2 }"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT 400 - Invalid status value",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"pm.test('Response body contains error message', function () {",
+							"    pm.expect(pm.response.text()).to.not.be.empty;",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:5000/api/Orders/1",
+					"protocol": "http",
+					"host": [ "localhost" ],
+					"port": "5000",
+					"path": [ "api", "Orders", "1" ]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{ \"status\": 99 }"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT 404 - Transaction not found",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"pm.test('Response body contains error message', function () {",
+							"    pm.expect(pm.response.text()).to.not.be.empty;",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:5000/api/Orders/9999",
+					"protocol": "http",
+					"host": [ "localhost" ],
+					"port": "5000",
+					"path": [ "api", "Orders", "9999" ]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{ \"status\": 1 }"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT 400 - Missing status in body",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"pm.test('Response body contains error message', function () {",
+							"    pm.expect(pm.response.text()).to.not.be.empty;",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:5000/api/Orders/1",
+					"protocol": "http",
+					"host": [ "localhost" ],
+					"port": "5000",
+					"path": [ "api", "Orders", "1" ]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				}
+			},
+			"response": []
 		}
 	]
 }
