@@ -8,43 +8,43 @@ using System.Threading.Tasks;
 namespace SbDisplayLib.Common
 {
     /// <summary>
-    /// Denne klasse repræsenterer resultatet af en operation, der enten kan være en succes med en værdi af typen T eller en fejl med en fejlkode og besked.
+    /// represents the result of an operation that can either be a success with a value of type T or a failure with an error code and message.
     /// </summary>
     /// <typeparam name="T">Type Parameter</typeparam>
     public class Result<T>
     {
         /// <summary>
-        /// Value er den værdi, der returneres ved en succesfuld operation.
+        /// value is the value that is returned when an operation is successful. This value is null when the operation fails.
         /// </summary>
         public T? Value { get; }
         /// <summary>
-        /// ErrorMessage indeholder en beskrivelse af fejlen, hvis operationen mislykkedes. Denne værdi er null ved en succesfuld operation.
+        /// errormessage contains a description of the error if the operation fails. This value is null for a successful operation.
         /// </summary>
         public string? ErrorMessage { get; }
         /// <summary>
-        /// Error indeholder en fejlkode, der angiver typen af fejl, hvis operationen mislykkedes.
+        /// Error contains an error code that indicates the type of error if the operation fails. This value is null for a successful operation.
         /// </summary>
         public ErrorCode? Error { get; }
         /// <summary>
-        /// IsSuccess er en boolesk egenskab, der indikerer, om operationen var en succes (true) eller en fejl (false).
+        /// IsSuccess is a boolean property that indicates whether the operation was successful (true) or a failure (false).
         /// </summary>
         public bool IsSuccess => Error is null;
 
 
         /// <summary>
-        /// Opretter et nyt succesfuldt resultat med en værdi.
+        /// Creates a new instance of the <see cref="Result{T}"/> class representing a successful result with the specified value.
         /// </summary>
-        /// <param name="value">Den værdi, som resultatet skal indeholde.</param>
+        /// <param name="value">value that is returned when an operation is successful</param>
         private Result(T value)
         {
             Value = value;
         }
 
         /// <summary>
-        /// Opretter et nyt fejlresultat med en fejlkode og en fejlbesked.
+        /// creates a new instance of the <see cref="Result{T}"/> class representing a failed result with the specified error code and message.
         /// </summary>
-        /// <param name="error">Fejlkoden, der beskriver typen af fejl.</param>
-        /// <param name="message">Beskeden, der beskriver fejlen.</param>
+        /// <param name="error">The error type</param>
+        /// <param name="message">Message that describes the error</param>
         private Result(ErrorCode error, string message)
         {
             Error = error;
@@ -53,10 +53,10 @@ namespace SbDisplayLib.Common
 
 
         /// <summary>
-        /// Opretter et succesfuldt resultat med den angivne værdi.
+        /// creates a successful result with the specified value.
         /// </summary>
-        /// <param name="value">Den værdi, som resultatet skal indeholde.</param>
-        /// <returns>Et succesfuldt <see cref="Result{T}"/>-objekt.</returns>
+        /// <param name="value">value is the value that is returned when an operation is successful.</param>
+        /// <returns>returns a <see cref="Result{T}"/> object that represents a successful operation containing the provided value.</returns>
         public static Result<T> Ok(T value)
         {
             return new Result<T>(value);
@@ -64,11 +64,12 @@ namespace SbDisplayLib.Common
 
 
         /// <summary>
-        /// Opretter et fejlresultat med den angivne fejlkode og fejlbesked.
+        /// creates a failed result with the specified error code and message.
+        /// 
         /// </summary>
-        /// <param name="error">Fejlkoden, der beskriver typen af fejl.</param>
-        /// <param name="message">Beskeden, der beskriver fejlen.</param>
-        /// <returns>Et fejlet <see cref="Result{T}"/>-objekt.</returns>
+        /// <param name="error">error is the error code that indicates the type of error.</param>
+        /// <param name="message">Message is a string that describes the error in more detail.</param>
+        /// <returns>a <see cref="Result{T}"/> object that represents a failed operation containing the provided error code and message..</returns>
         public static Result<T> Fail(ErrorCode error, string message)
         {
             return new Result<T>(error, message);
@@ -76,10 +77,10 @@ namespace SbDisplayLib.Common
 
 
         /// <summary>
-        /// Forsøger at hente værdien fra resultatet.
+        /// tries to get the value from the result.
         /// </summary>
-        /// <param name="value">Indeholder værdien, hvis operationen var succesfuld.</param>
-        /// <returns><c>true</c>, hvis resultatet er succesfuldt og indeholder en værdi. Ellers returneres <c>false</c>.</returns>
+        /// <param name="value">value is assigned the value of the result if the operation was successful</param>
+        /// <returns>returns true if the operation was successful and contains a value, otherwise returns false.</returns>
         public bool TryGetValue(out T value)
         {
             if (IsSuccess && Value is not null)

@@ -11,22 +11,22 @@ using System.Net.Http.Json;
 namespace SbDisplayLib.ApiClients
 {
     /// <summary>
-    /// Dette er en API-klient, der kommunikerer med Shopbox's eksterne Order API for at hente ordredata baseret på en given transactionId.
+    /// this is an API client that communicates with Shopbox's external Order API to retrieve order data based on a given transactionId.
     /// </summary>
     public class OrderApiClient : IOrderApiClient
     {
         /// <summary>
-        /// HttpClient bruges til at sende HTTP-anmodninger til Shopbox's Order API.
+        /// httpClient is used to send HTTP requests to Shopbox's Order API.
         /// </summary>
         private readonly HttpClient _httpClient;
         /// <summary>
-        /// _apiKey indeholder den nødvendige API-token for at autentificere anmodninger til Shopbox's Order API. Denne token hentes fra konfigurationen ved oprettelsen af klienten.
+        /// _apiKey is a string that holds the API token required for authenticating requests to Shopbox's Order API. This token is retrieved from the configuration during the client's initialization.
         /// </summary>
         private readonly string _apiKey;
 
 
         /// <summary>
-        /// constructoren for OrderApiClient, der tager en HttpClient og IConfiguration som parametre.
+        /// the constructor for OrderApiClient initializes the HttpClient and retrieves the API token from the configuration.
         /// </summary>
         public OrderApiClient(HttpClient httpClient, IConfiguration configuration)
         {
@@ -36,10 +36,9 @@ namespace SbDisplayLib.ApiClients
         }
 
         /// <summary>
-        /// GetOrderAsync er en asynkron metode, der tager en transactionId som parameter og forsøger at hente den tilsvarende ordre fra Shopbox's Order API.
-        /// Metoden håndterer forskellige scenarier, herunder ikke fundet (404) og andre HTTP-fejl, og konverterer det modtagne OrderDto til en Order-model ved hjælp af OrderDtoToOrderConverter.
+        /// Is asynchronous method that takes a transactionId as a parameter and attempts to retrieve the corresponding order from Shopbox's Order API.
         /// </summary>
-        /// <returns>Metoden returnere et Result<Order> objekt, der enten indeholder den hentede ordre eller en fejlbesked og en fejlkode, hvis anmodningen mislykkedes. 
+        /// <returns>the methos returns a Result<Order> object, which encapsulates either the successfully retrieved order or an error message and code if the request fails.
         public async Task<Result<Order>> GetOrderAsync(int transactionId)
         {
             var url = $"api/v3/baskets/{transactionId}?api-token={_apiKey}";
