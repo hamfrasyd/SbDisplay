@@ -18,7 +18,7 @@ export class CustomerDisplay implements AfterViewInit, OnDestroy {
 
   /**
    * Injects Angular's NgZone.
-   * @remkars Ngzone is a service that allows us to run code that is not part of the Angular framework,
+   * @remarks Ngzone is a service that allows us to run code that is not part of the Angular framework,
    * such as the ResizeObserver. ResizeObserver fires outside Angular's change detection zone
    */
   private readonly ngZone = inject(NgZone);
