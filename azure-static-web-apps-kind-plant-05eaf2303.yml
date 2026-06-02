@@ -14,10 +14,10 @@ jobs:
 - job: build_and_deploy_job
   displayName: Build and Deploy Job
   condition: or(eq(variables['Build.Reason'], 'Manual'),or(eq(variables['Build.Reason'], 'PullRequest'),eq(variables['Build.Reason'], 'IndividualCI')))
-  
+
   pool:
     vmImage: ubuntu-latest
-  
+
   variables:
   - group: Azure-Static-Web-Apps-kind-plant-05eaf2303-variable-group
 
@@ -26,7 +26,7 @@ jobs:
 
   - name: frontendOutput
     value: SbDisplayFront/shopbox-display/dist/shopbox-display/browser
-  
+
   steps:
   - checkout: self
     submodules: true
@@ -44,9 +44,14 @@ jobs:
     displayName: Build Angular app
     workingDirectory: $(Build.SourcesDirectory)/$(frontendApp)
 
-  - script: npm run test -- --no-watch
-    displayName: Run unit tests
+  - script: npm run test -- --no-watch --coverage --coverage-reporters=cobertura
+    displayName: Run unit tests with code coverage
     workingDirectory: $(Build.SourcesDirectory)/$(frontendApp)
+
+  - task: PublishCodeCoverageResults@2
+    displayName: Publish code coverage
+    inputs:
+      summaryFileLocation: '$(Build.SourcesDirectory)/$(frontendApp)/coverage/**/cobertura-coverage.xml'
 
   - task: AzureStaticWebApp@0
     displayName: Deploy to Azure Static Web Apps
