@@ -55,9 +55,10 @@ public class OrderApiClientTests
 
         // Act
         var result = await client.GetOrderAsync(123);
+        result.TryGetValue(out var resultValue);
 
         // Assert
-        result.Value!.Status.Should().Be(OrderStatus.UnderPreparation);
+        resultValue.Status.Should().Be(OrderStatus.UnderPreparation);
     }
 
     [Fact]
