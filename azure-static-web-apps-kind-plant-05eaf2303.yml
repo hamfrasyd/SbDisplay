@@ -17,9 +17,24 @@ jobs:
     vmImage: ubuntu-latest
   variables:
   - group: Azure-Static-Web-Apps-kind-plant-05eaf2303-variable-group
+  - name: frontendApp
+    value: SbDisplayFront/shopbox-display
   steps:
   - checkout: self
     submodules: true
+  - task: NodeTool@0
+    displayName: Install Node.js
+    inputs:
+      versionSpec: '22.x'
+  - script: npm ci
+    displayName: Install npm dependencies
+    workingDirectory: $(Build.SourcesDirectory)/$(frontendApp)
+  - script: npm run build
+    displayName: Build Angular app
+    workingDirectory: $(Build.SourcesDirectory)/$(frontendApp)
+  - script: npm run test -- --no-watch
+    displayName: Run unit tests
+    workingDirectory: $(Build.SourcesDirectory)/$(frontendApp)
   - task: AzureStaticWebApp@0
     inputs:
       azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_KIND_PLANT_05EAF2303)
