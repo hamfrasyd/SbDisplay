@@ -1,232 +1,207 @@
-import { ChangeDetectorRef, Component, computed, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { fromEvent, map, startWith } from 'rxjs';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { OrderDisplayStateService } from '../../services/order-display-state.service';
 import { Order, OrderStatus } from '../../generated/orders';
-import { DatePipe } from '@angular/common';
+import { OrderCard } from './child-components/order-card/order-card';
+import { ResponsiveOrderColumns } from './helpers/responsive-order-columns.service';
 
+/**
+ * Local UI enum for the two tabs the employee can switch between.
+ * @remarks Local UI enums live in the component file, since they have no business being in the service.
+ */
 enum EmployeeTab {
-  Received = 'Received',
-  Completed = 'completed'
+    Received = 'Received',
+    Completed = 'Completed'
 }
 
 @Component({
     selector: 'app-employee-display',
-    imports: [DatePipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [OrderCard],
+    providers: [ResponsiveOrderColumns],
     templateUrl: './employee-display.html',
     styleUrl: './employee-display.css',
 })
 export class EmployeeDisplay {
-    public readonly orderStatusEnum = OrderStatus;
-    public readonly employeeTabEnum = EmployeeTab;
+    //#region Injected dependencies
 
-    public readonly activeEmployeeTab = signal<EmployeeTab>(EmployeeTab.Received);
-    public readonly errorMessageByOrderTransactionId = signal<Map<number, string>>(new Map());
-    public readonly pageLevelErrorMessage = signal<string | null>(null);
-    public readonly expandedOrderCardTransactionIds = signal<Set<number>>(new Set());
+    /**
+     * Injects the OrderDisplayStateService, which is the service that owns the order state.
+     * @remarks 'inject(...)' is the recommended way to inject services into components.
+     */
+    private readonly orderDisplayState = inject(OrderDisplayStateService);
 
-    private readonly maximumPreviewOrderItemCount = 4;
+    /**
+     * Injects the ResponsiveOrderColumns service, which owns the viewport-driven column layout.
+     * @remarks Provided at the component level, so its resize listener only lives while this page is mounted.
+     */
+    private readonly responsiveOrderColumns = inject(ResponsiveOrderColumns);
+    //#endregion
 
-    private readonly responsiveOrderColumnCount = toSignal(
-        fromEvent(window, 'resize').pipe(
-            startWith(null),
-            map((): number => {
-                const viewportWidthPixels = window.innerWidth;
-                if (viewportWidthPixels >= 1200) return 4;
-                if (viewportWidthPixels >= 992) return 3;
-                if (viewportWidthPixels >= 768) return 2;
-                return 1;
-            })
-        ),
-        { initialValue: 4 }
-    );
+    //#region Enum aliases for the template
 
-    public readonly ordersDistributedIntoResponsiveColumns = computed(() => {
-        const ordersToDisplay = this.currentlyDisplayedOrders();
-        const responsiveColumnCount = this.responsiveOrderColumnCount() ?? 4;
-        const orderColumns: Order[][] = Array.from({ length: responsiveColumnCount }, () => []);
-        ordersToDisplay.forEach((order, orderIndex) => orderColumns[orderIndex % responsiveColumnCount].push(order));
-        return orderColumns;
-    });
+    /**
+     * Exposes the EmployeeTab enum to the template.
+     * @remarks Templates can't read imported symbols directly, so we alias the enum on a field.
+     */
+    protected readonly employeeTabEnum = EmployeeTab;
+    //#endregion
 
-    // Swipe state - only one card can be swiped at a time.
-    // transactionIdOfOrderBeingEvaluatedForSwipe is a plain field (not a signal) intentionally:
-    // updating a signal on every touch-down triggers Angular re-renders mid-double-tap,
-    // which breaks browser double-tap detection across mouse, touch and pen input.
-    public readonly activelySwipedOrderTransactionId = signal<number | null>(null);
-    public readonly swipeHorizontalOffsetPixels = signal<number>(0);
+    //#region UI state signals
 
-    // Where the finger/mouse first touched down (horizontal screen position), so we can measure how far it has dragged.
-    private dragStartHorizontalScreenPositionInPixels: number = 0;
-    // The order being checked for a swipe gesture — set on touch-down, before we know it's a real swipe and not a tap.
-    private transactionIdOfOrderBeingEvaluatedForSwipe: number | null = null;
-    // The user must drag the card left at least this far before releasing for the order to be sent back to preparation.
-    private readonly minimumDragDistanceToRevertOrderInPixels: number = 100;
-    // The finger/mouse must move at least this far before we treat the gesture as a swipe instead of a tap/double-tap.
-    private readonly minimumDragDistanceToCountAsSwipeInPixels: number = 5;
+    /** The tab currently selected by the employee. */
+    protected readonly activeEmployeeTab = signal<EmployeeTab>(EmployeeTab.Received);
 
-    public readonly receivedOrders = computed(() => {
+    /**
+     * Per-card error messages, keyed by the order's transactionId.
+     * @remarks Map is a collection of key-value pairs, so each card can surface its own error independently.
+     */
+    protected readonly errorMessageByOrderTransactionId = signal<Map<number, string>>(new Map());
+
+    /** A page-level error message shown above the board, or null when there is none. */
+    protected readonly pageLevelErrorMessage = signal<string | null>(null);
+    //#endregion
+
+    //#region State aliased from the OrderDisplayStateService
+
+    /**
+     * The initial-load error from the OrderDisplayStateService.
+     * @remarks Aliased so the template can read it without exposing the OrderDisplayStateService dependency.
+     */
+    protected readonly initialLoadErrorMessage = this.orderDisplayState.loadError;
+
+    /**
+     * Whether the initial orders fetch from the API is still in progress.
+     * @remarks Aliased so the template can show a loading state without reaching into the service.
+     */
+    protected readonly isLoadingOrders = this.orderDisplayState.isLoadingOrders;
+    //#endregion
+
+    //#region Derived (computed) state
+
+    /**
+     * Orders shown on the "Received" tab.
+     * @remarks computed signals are derived signals, this recomputes whenever the OrderDisplayStateService's orders change.
+     */
+    protected readonly receivedOrders = computed(() => {
         return this.orderDisplayState.orders().filter(order => order.status === OrderStatus.UnderPreparation || order.status === OrderStatus.ReadyForPickup);
     });
 
-    public readonly completedOrders = computed(() => {
+    /**
+     * Orders shown on the "Completed" tab.
+     * @remarks computed signals are derived signals, this recomputes whenever the OrderDisplayStateService's orders change.
+     */
+    protected readonly completedOrders = computed(() => {
         return this.orderDisplayState.orders().filter(order => order.status === OrderStatus.Completed);
     });
 
-    public readonly currentlyDisplayedOrders = computed(() => {
+    /**
+     * The orders for whichever tab is currently active.
+     * @remarks Lets the template bind to one list instead of branching on the active tab.
+     */
+    protected readonly currentlyDisplayedOrders = computed(() => {
         if (this.activeEmployeeTab() === EmployeeTab.Received) {
             return this.receivedOrders();
         }
         return this.completedOrders();
     });
 
-    public readonly currentTimestampMilliseconds = signal(Date.now());
+    /**
+     * The displayed orders split into columns for the responsive grid.
+     * @remarks Delegates the layout to the ResponsiveOrderColumns service; this recomputes on resize
+     * (it reads the service's column-count signal) and whenever the displayed orders change.
+     */
+    protected readonly ordersDistributedIntoResponsiveColumns = computed(() => {
+        return this.responsiveOrderColumns.distributeIntoColumns(this.currentlyDisplayedOrders());
+    });
 
-    constructor(public orderDisplayState: OrderDisplayStateService, private changeDetectorRef: ChangeDetectorRef) {
-        setInterval(() => {
-            this.currentTimestampMilliseconds.set(Date.now());
-            this.changeDetectorRef.detectChanges();
-        }, 60000);
-    }
+    /** Whether the active tab has at least one order to render. */
+    protected readonly hasCurrentlyDisplayedOrders = computed(() => this.currentlyDisplayedOrders().length > 0);
 
-    public getElapsedMinutesSinceOrderCreationLabel(order: Order): string {
-        if (!order.creationTime) {
-            return '0 min';
-        }
+    /** Whether the Received tab is the active employee tab. */
+    protected readonly isReceivedEmployeeTabActive = computed(() =>
+        this.activeEmployeeTab() === EmployeeTab.Received,
+    );
 
-        const orderCreationTimestampMilliseconds = new Date(order.creationTime).getTime();
-        const elapsedMinutesSinceOrderCreation = Math.floor((this.currentTimestampMilliseconds() - orderCreationTimestampMilliseconds) / 1000 / 60);
+    /** Whether the Completed tab is the active employee tab. */
+    protected readonly isCompletedEmployeeTabActive = computed(() =>
+        this.activeEmployeeTab() === EmployeeTab.Completed,
+    );
 
-        return `${elapsedMinutesSinceOrderCreation} min`;
-    }
+    /**
+     * Responsive columns with each order paired to its card error message.
+     * @remarks Keeps per-order error lookup out of the template so the grid binds to plain values.
+     */
+    protected readonly orderColumnsWithCardErrorMessages = computed(() => {
+        const errorMessagesByOrderTransactionId = this.errorMessageByOrderTransactionId();
 
-    public isOrderOlderThanFiveMinutes(order: Order): boolean {
-        if (!order.creationTime) {
-            return false;
-        }
+        return this.ordersDistributedIntoResponsiveColumns().map(columnOrders =>
+            columnOrders.map(order => ({
+                order,
+                errorMessage: this.lookupOrderCardErrorMessage(order, errorMessagesByOrderTransactionId),
+            })),
+        );
+    });
+    //#endregion
 
-        const orderCreationTimestampMilliseconds = new Date(order.creationTime).getTime();
-        const elapsedMinutesSinceOrderCreation = Math.floor((this.currentTimestampMilliseconds() - orderCreationTimestampMilliseconds) / 1000 / 60);
+    //#region Tab and page-error handling
 
-        return elapsedMinutesSinceOrderCreation >= 5;
-    }
-
-    public setActiveEmployeeTab(employeeTab: EmployeeTab): void {
+    /**
+     * Switches the active tab.
+     * @param employeeTab The tab to activate.
+     * @returns void
+     */
+    protected setActiveEmployeeTab(employeeTab: EmployeeTab): void {
         this.activeEmployeeTab.set(employeeTab);
     }
 
-    public clearPageLevelErrorMessage(): void {
+    /**
+     * Clears the page-level error message.
+     * @returns void
+     */
+    protected clearPageLevelErrorMessage(): void {
         this.pageLevelErrorMessage.set(null);
     }
+    //#endregion
 
-    public onOrderCardDoubleClick(order: Order): void {
-        if (order.status === OrderStatus.UnderPreparation) {
-            this.requestOrderStatusUpdate(order, OrderStatus.ReadyForPickup);
-            return;
-        }
+    //#region Order card handling
 
-        if (order.status === OrderStatus.ReadyForPickup) {
-            this.requestOrderStatusUpdate(order, OrderStatus.Completed);
-            return;
-        }
-    }
-
-    public onChangeOrderStatus(order: Order, newOrderStatus: OrderStatus): void {
+    /**
+     * Handles a status change requested by an order card.
+     * @param order The order to update.
+     * @param newOrderStatus The status the card resolved to move the order to.
+     * @returns void
+     */
+    protected onOrderStatusChange(order: Order, newOrderStatus: OrderStatus): void {
         this.requestOrderStatusUpdate(order, newOrderStatus);
     }
+    //#endregion
 
-    public isOrderSwipeable(order: Order): boolean {
-        return order.status === OrderStatus.ReadyForPickup;
-    }
+    //#region Private helpers
 
-    public isOrderCurrentlySwiping(order: Order): boolean {
-        return this.activelySwipedOrderTransactionId() === order.transactionId;
-    }
-
-    public isOrderCardExpanded(order: Order): boolean {
-        return order.transactionId != null && this.expandedOrderCardTransactionIds().has(order.transactionId);
-    }
-
-    public toggleOrderCardExpanded(order: Order, event: Event): void {
-        event.stopPropagation();
+    /**
+     * Reads the card error message for an order from the current error map.
+     * @param order The order whose card error to read.
+     * @param errorMessagesByOrderTransactionId The current per-order error messages.
+     * @returns The card error message, or null when there is none.
+     */
+    private lookupOrderCardErrorMessage(order: Order, errorMessagesByOrderTransactionId: Map<number, string>): string | null {
         const transactionId = order.transactionId;
-        if (transactionId == null) return;
 
-        const updatedExpandedOrderCardTransactionIds = new Set(this.expandedOrderCardTransactionIds());
-        if (updatedExpandedOrderCardTransactionIds.has(transactionId)) {
-            updatedExpandedOrderCardTransactionIds.delete(transactionId);
-        } else {
-            updatedExpandedOrderCardTransactionIds.add(transactionId);
-        }
-        this.expandedOrderCardTransactionIds.set(updatedExpandedOrderCardTransactionIds);
-    }
-
-    public getVisibleOrderItems(order: Order) {
-        if (!order.items?.length) return [];
-        if (this.isOrderCardExpanded(order)) return order.items;
-        return order.items.slice(0, this.maximumPreviewOrderItemCount);
-    }
-
-    public getHiddenOrderItemCount(order: Order): number {
-        if (!order.items?.length) return 0;
-        return Math.max(0, order.items.length - this.maximumPreviewOrderItemCount);
-    }
-
-    public getSwipeTransformStyle(order: Order): string | null {
-        if (this.activelySwipedOrderTransactionId() !== order.transactionId) {
+        if (transactionId == null) {
             return null;
         }
-        return `translateX(${this.swipeHorizontalOffsetPixels()}px)`;
+
+        return errorMessagesByOrderTransactionId.get(transactionId) ?? null;
     }
 
-    public onSwipePointerDown(event: PointerEvent, order: Order): void {
-        if (this.isOrderSwipeable(order) === false) {
-            return;
-        }
-
-        if (order.transactionId === undefined || order.transactionId === null) {
-            return;
-        }
-
-        // Record start position only — no signal updates, no setPointerCapture.
-        // Signals and capture are deferred to onSwipePointerMove once horizontal movement is confirmed,
-        // so that taps and dblclicks are completely unaffected by the swipe setup.
-        this.dragStartHorizontalScreenPositionInPixels = event.clientX;
-        this.transactionIdOfOrderBeingEvaluatedForSwipe = order.transactionId;
-    }
-
-    public onSwipePointerMove(event: PointerEvent, order: Order): void {
-        if (this.transactionIdOfOrderBeingEvaluatedForSwipe === null) {
-            return;
-        }
-
-        const swipeHorizontalOffsetPixels = event.clientX - this.dragStartHorizontalScreenPositionInPixels;
-
-        // Commit to swipe only once horizontal movement is confirmed.
-        // This is the first point where we update signals or capture the pointer.
-        if (this.activelySwipedOrderTransactionId() === null && Math.abs(swipeHorizontalOffsetPixels) > this.minimumDragDistanceToCountAsSwipeInPixels) {
-            this.activelySwipedOrderTransactionId.set(this.transactionIdOfOrderBeingEvaluatedForSwipe);
-            (event.currentTarget as Element).setPointerCapture(event.pointerId);
-        }
-
-        if (this.activelySwipedOrderTransactionId() !== null && swipeHorizontalOffsetPixels < 0) {
-            this.swipeHorizontalOffsetPixels.set(swipeHorizontalOffsetPixels);
-        }
-    }
-
-    public onSwipePointerEnd(_event: PointerEvent, order: Order): void {
-        const wasOrderActivelySwiped = this.activelySwipedOrderTransactionId() !== null;
-        const finalSwipeHorizontalOffsetPixels = this.swipeHorizontalOffsetPixels();
-
-        this.transactionIdOfOrderBeingEvaluatedForSwipe = null;
-        this.activelySwipedOrderTransactionId.set(null);
-        this.swipeHorizontalOffsetPixels.set(0);
-
-        if (wasOrderActivelySwiped && Math.abs(finalSwipeHorizontalOffsetPixels) >= this.minimumDragDistanceToRevertOrderInPixels) {
-            this.requestOrderStatusUpdate(order, OrderStatus.UnderPreparation);
-        }
-    }
-
+    /**
+     * Sends a status update to the OrderDisplayStateService and surfaces success/failure on the card.
+     * @param order The order to update.
+     * @param newOrderStatus The status to move the order to.
+     * @remarks Guards against a missing transactionId, then subscribes: clears the card error on
+     * success, sets a card error on failure.
+     * @returns void
+     */
     private requestOrderStatusUpdate(order: Order, newOrderStatus: OrderStatus): void {
         const transactionId = order.transactionId;
 
@@ -241,12 +216,25 @@ export class EmployeeDisplay {
         });
     }
 
+    /**
+     * Sets the error message for a single order card.
+     * @param transactionId The order whose card to flag.
+     * @param errorMessage The message to show.
+     * @remarks Builds a new Map before mutating so the signal sees a new reference and re-renders.
+     * @returns void
+     */
     private setOrderCardErrorMessage(transactionId: number, errorMessage: string): void {
         const updatedErrorMessagesByOrderTransactionId = new Map(this.errorMessageByOrderTransactionId());
         updatedErrorMessagesByOrderTransactionId.set(transactionId, errorMessage);
         this.errorMessageByOrderTransactionId.set(updatedErrorMessagesByOrderTransactionId);
     }
 
+    /**
+     * Clears the error message for a single order card, if one is set.
+     * @param transactionId The order whose card error to clear.
+     * @remarks Builds a new Map before mutating so the signal sees a new reference and re-renders.
+     * @returns void
+     */
     private clearOrderCardErrorMessage(transactionId: number): void {
         const currentErrorMessagesByOrderTransactionId = this.errorMessageByOrderTransactionId();
 
@@ -256,4 +244,5 @@ export class EmployeeDisplay {
             this.errorMessageByOrderTransactionId.set(updatedErrorMessagesByOrderTransactionId);
         }
     }
+    //#endregion
 }

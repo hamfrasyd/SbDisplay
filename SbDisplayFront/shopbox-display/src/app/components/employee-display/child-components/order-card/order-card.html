@@ -1,0 +1,102 @@
+<!-- Swipe container wraps the card so the revert indicator can be revealed behind it -->
+<div class="order-swipe-container">
+
+  <!-- Revert indicator (only rendered for swipeable cards, sits behind the card) -->
+  @if (isOrderSwipeable()) {
+  <div class="order-swipe-indicator">
+    <span>← Tilbage til tilberedning</span>
+  </div>
+  }
+
+  <!-- Order card -->
+  <div class="card order-card d-flex flex-column"
+    [class.order-card-too-old]="isOrderCardTooOld()"
+    [class.order-card-ready]="isOrderCardReady()"
+    [class.order-card-completed]="isOrderCardCompleted()"
+    [class.order-card-expanded]="isCardExpanded()"
+    [class.order-card-swipeable]="isOrderSwipeable()"
+    [class.order-card-swiping]="isOrderCardActivelySwiping()"
+    [style.transform]="getOrderCardSwipeTransformStyle()"
+    (pointerdown)="onOrderCardPointerDown($event)"
+    (pointermove)="onOrderCardPointerMove($event)"
+    (pointerup)="onOrderCardPointerEnd($event)"
+    (pointercancel)="onOrderCardPointerEnd($event)">
+
+    <!-- Order card header -->
+    <div class="card-header d-flex justify-content-between align-items-center"
+      (dblclick)="onOrderCardDoubleClick()">
+      <strong class="fs-5">Order #{{ order().id ?? 'N/A' }}</strong>
+      <small class="text-muted">{{ getOrderStatusDisplayLabel(order().status) }}</small>
+    </div>
+
+    <!-- Order card body -->
+    <div class="card-body order-card-body" (dblclick)="onOrderCardDoubleClick()">
+      @if (hasOrderItems()) {
+      <ul class="list-group list-group-flush">
+        @for (orderItem of visibleOrderItems(); track orderItem.item?.id) {
+        <li class="list-group-item px-0 py-1 border-0 bg-transparent">
+          <span class="badge bg-secondary me-2">
+            {{ orderItem.quantity }}x
+          </span>
+          {{ orderItem.item?.name }}
+        </li>
+        } @empty {
+        <li class="list-group-item px-0 py-1 border-0 bg-transparent text-muted mb-0">Ingen varer at vise</li>
+        }
+      </ul>
+      @if (shouldShowOrderItemsToggle()) {
+      <button type="button" class="order-items-toggle mt-2" (click)="toggleOrderCardExpanded($event)">
+        @if (isCardExpanded()) {
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+          class="order-items-toggle-icon order-items-toggle-icon-expanded bi bi-hand-index me-1" viewBox="0 0 16 16">
+          <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>              </svg>
+        Vis færre
+        } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+          class="order-items-toggle-icon bi bi-hand-index me-1" viewBox="0 0 16 16">
+          <path
+            d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
+        </svg>
+        Vis flere vare +{{ hiddenOrderItemCount() }}
+        }
+      </button>
+      }
+      } @else {
+      <p class="text-muted mb-0">Ingen varer</p>
+      }
+    </div>
+
+    <!-- Order card footer -->
+    <div class="card-footer mt-auto card-header d-flex justify-content-between align-items-center">
+      <small class="text-muted d-block mb-2" (dblclick)="onOrderCardDoubleClick()">
+        Oprettet: {{ order().creationTime | date:'HH:mm' }}
+      </small>
+      <small
+        [class.text-muted]="isOrderAgeLabelMuted()"
+        [class.text-danger]="isOrderConsideredOld()"
+        [class.fw-bold]="isOrderConsideredOld()">
+        {{ elapsedMinutesSinceOrderCreationLabel() }}
+      </small>
+
+      @if (errorMessage(); as cardError) {
+      <div class="alert alert-danger mt-2 mb-0 py-2 small">
+        {{ cardError }}
+      </div>
+      }
+
+      <!-- Status change buttons (Completed tab only) -->
+      @if (isOrderCardCompleted()) {
+      <div class="d-flex justify-content-between gap-2">
+        <button type="button" class="btn btn-sm order-btn-prep"
+          (click)="onChangeOrderStatus(orderStatusEnum.UnderPreparation)">
+          Under tilberedning
+        </button>
+        <button type="button" class="btn btn-sm order-btn-ready"
+          (click)="onChangeOrderStatus(orderStatusEnum.ReadyForPickup)">
+          Klar til afhentning
+        </button>
+      </div>
+      }
+    </div>
+  </div>
+</div>

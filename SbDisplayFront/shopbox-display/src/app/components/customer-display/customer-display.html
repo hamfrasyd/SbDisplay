@@ -9,12 +9,6 @@
       }
     </div>
 
-    <!--
-      Overflow ticker — only rendered when there are more orders than fit in the grid.
-      The inner .ticker-track contains the items twice so the CSS animation can loop
-      seamlessly: when the first copy scrolls off the left edge, the second copy is
-      already in position, creating a continuous loop without a visual jump.
-    -->
     @if (hasLeftOverflow()) {
       <div class="ticker-wrapper" aria-label="Flere ordrer under tilberedning">
         <div class="ticker-track left-ticker">
@@ -28,7 +22,6 @@
 
   <div class="divider"></div>
 
-  <!-- ═══════════════════════════ RIGHT — Afhent ═══════════════════════════ -->
   <div class="column right">
     <h2>Afhent</h2>
 

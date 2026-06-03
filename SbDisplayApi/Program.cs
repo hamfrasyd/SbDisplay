@@ -54,6 +54,7 @@ builder.Services.AddCors(options =>
 });
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -63,8 +64,9 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-
-// Siger UseCors("ShopboxdisplayPolicy") efter UseAuthorization, så CORS-politikken virker efter at brugeren er autentificeret.
+//Cors skal placeres efter UseRouting og før UseAuthorization for at sikre, at CORS-politikken anvendes korrekt på de ruter, der kræver autorisation.
+//Hvis UseCors placeres før UseRouting, vil CORS-politikken ikke blive anvendt på de ruter, der er defineret i UseRouting,
+//hvilket kan føre til CORS-fejl i klienten, når den forsøger at få adgang til beskyttede ressourcer.
 app.UseCors("ShopboxdisplayPolicy");
 
 
