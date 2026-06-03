@@ -89,7 +89,7 @@
 							"    pm.expect(json).to.be.an('object');",
 							"    pm.expect(json).to.have.property('transactionId');",
 							"    pm.expect(json.transactionId).to.eql(1);",
-							"    pm.expect(json.status).to.eql(2);",
+							"    pm.expect(json.status).to.eql(ReadyForPickup);",
 							"});"
 						]
 					}
