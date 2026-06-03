@@ -98,6 +98,7 @@ namespace SbDisplayLib.Repositories
             {
                 const string sql = """
                     INSERT INTO [dbo].[OrdersItems] (OrderTransactionId, ItemId, Quantity)
+                    OUTPUT INSERTED.OrderTransactionId ,INSERTED.ItemId ,INSERTED.Quantity
                     VALUES (@OrderTransactionId, @ItemId, @Quantity)
                     """;
 
